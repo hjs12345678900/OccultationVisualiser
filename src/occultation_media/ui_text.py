@@ -20,6 +20,7 @@ TEXT = {
  'mp4': ('同时生成 MP4','Also export MP4'),
  'stretch': ('固定拉伸：初始显示帧 0.5% / 99.95% 分位数，整段使用相同 asinh 参数。','Fixed stretch: first displayed frame, 0.5% / 99.95% limits; identical asinh mapping throughout.'),
  'generate': ('生成动画','Generate'), 'cancel': ('取消','Cancel'), 'reveal': ('打开结果文件夹','Open output folder'),
+ 'media_config': ('PyMovie / 四站配置…','PyMovie / four-station JSON…'),
  'idle': ('选择观测文件与测光 CSV 后开始。','Choose an observation file and photometry CSV to begin.'),
  'running': ('正在生成… 大画幅或较长录像可能需要几分钟。','Generating… Large frames or long clips may take several minutes.'),
  'done': ('完成：GIF、预览和所选视频已保存。','Complete: GIF, previews and selected videos saved.'),

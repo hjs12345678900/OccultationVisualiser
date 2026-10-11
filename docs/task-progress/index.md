@@ -7,3 +7,5 @@
 - [v1.3.1 p001](v1.3.1/task-progress_v1.3.1_p001.md): TASK-0008.
 
 - [v1.3.2 p001](v1.3.2/task-progress_v1.3.2_p001.md): TASK-0009.
+
+- [v1.4.0 p001](v1.4.0/task-progress_v1.4.0_p001.md): TASK-0010–0013, source validation complete; package evidence on release.

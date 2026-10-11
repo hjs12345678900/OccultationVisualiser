@@ -55,6 +55,30 @@ def run():
                 raise AssertionError('Missing prediction must remain null')
             summaries.append(manifest['outputs']['en'])
         if len({s['black_adu'] for s in summaries})!=1:raise AssertionError('Stretch differs between source formats')
+        # Exercise strict native timing and metadata inside the frozen app too.
+        from .make_station_media import make_station_media
+        start=np.datetime64('2026-01-01','ns')
+        ticks=int(start.astype('int64'))//100+621355968000000000
+        with (root/'frames.ser').open('ab') as stream:
+            stream.write(struct.pack('<6Q',*(ticks+i*3000000 for i in range(6))))
+        native=['FrameNum,timeInfo,signal-target,xcentroid-target,ycentroid-target']
+        for i in range(6):
+            clock=str(start+np.timedelta64(i*300,'ms')).split('T')[1]
+            native.append(f'{i},[{clock}],{10 if i in (2,3) else 100},32,16')
+        (root/'native.csv').write_text('\n'.join(native))
+        cfg=dict(event='Native',target='Target',date_utc='2026-01-01',alignment='absolute_utc',
+            start_utc=str(start),end_utc=str(start+np.timedelta64(1500,'ms')),step_s=.3,language='both',
+            stations=[dict(name='Observer',curve_format='pymovie_csv',curve='native.csv',target_column='signal-target',
+                source='frames.ser',source_first_frame=0,exposure_s=.3,timestamp_reference='start',source_timestamp_reference='start',mapping_tolerance_s=1e-9)])
+        config=root/'native.json';config.write_text(json.dumps(cfg))
+        with contextlib.redirect_stdout(io.StringIO()):make_station_media(config,root/'native_media')
+        record=json.loads((root/'native_media/run_metadata.json').read_text())
+        if not record['input_integrity_verified']:raise AssertionError('Native input integrity failed')
+        meta=json.loads((root/'native_media/media_metadata.json').read_text())
+        if meta['stations'][0]['residual_max_s']!=0:raise AssertionError('Native source/curve UTC differs')
+        for lang in ('en','zh'):
+            with Image.open(meta['outputs'][lang]['gif']) as image:
+                if image.n_frames!=6:raise AssertionError('Native GIF elapsed timeline differs')
     return {'ok':True,'system':platform.system(),'architecture':platform.machine(),
-            'exports':['SER','FITS','RAVF'],'languages':['en','zh'],'outputs':['GIF','PNG','MP4'],
+            'exports':['SER','FITS','RAVF','native PyMovie SER'],'languages':['en','zh'],'outputs':['GIF','PNG','MP4'],
             'ffmpeg':ffmpeg_executable(),'adv':'Requires separate real-observation smoke test'}

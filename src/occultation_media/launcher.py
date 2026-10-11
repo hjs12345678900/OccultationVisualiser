@@ -7,6 +7,15 @@ import sys
 import traceback
 
 
+def generate_job(args):
+    """Dispatch a saved configuration or the established Tangra CLI."""
+    if args and args[0] == '--media-config':
+        from .station_cli import main as generate
+        return generate(args[1:])
+    from .make_tangra_occultation_media import main as generate
+    return generate(args)
+
+
 def main():
     args=sys.argv[1:]
     if args and args[0]=='--adv-worker':
@@ -26,9 +35,8 @@ def main():
         with job.with_name('run.log').open('w',encoding='utf-8',buffering=1) as log:
             with contextlib.redirect_stdout(log),contextlib.redirect_stderr(log):
                 try:
-                    from .make_tangra_occultation_media import main as generate
                     print('Reading observation and generating synchronized media…',flush=True)
-                    generate(config['argv'])
+                    generate_job(config['argv'])
                     result.write_text(json.dumps({'ok':True}),encoding='utf-8')
                 except BaseException as error:
                     traceback.print_exc()
@@ -40,8 +48,9 @@ def main():
         if len(args)>1:Path(args[1]).write_text(json.dumps(report,indent=2))
         elif sys.stdout:print(json.dumps(report,indent=2))
     elif args and args[0]=='--cli':
-        from .make_tangra_occultation_media import main as generate
-        generate(args[1:])
+        generate_job(args[1:])
+    elif args and args[0]=='--media-config':
+        generate_job(args)
     else:
         from .desktop_app import run
         run(smoke=bool(args and args[0]=='--gui-smoke'))

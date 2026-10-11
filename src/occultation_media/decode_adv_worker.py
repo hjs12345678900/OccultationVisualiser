@@ -34,7 +34,8 @@ def main():
             values = array('I',pixels)
             if sys.byteorder != 'little':
                 values.byteswap()
-            Path(request['output_dir'], f'{index}.raw').write_bytes(values.tobytes())
+            if request['output_dir'] is not None:
+                Path(request['output_dir'], f'{index}.raw').write_bytes(values.tobytes())
             ns = timing.UtcMidExposureTimestampLo + (timing.UtcMidExposureTimestampHi << 32)
             records.append({'source_index': index, 'midpoint_timestamp_ns': ns,
                             'utc': (datetime(2010,1,1)+timedelta(microseconds=ns//1000)).isoformat(),

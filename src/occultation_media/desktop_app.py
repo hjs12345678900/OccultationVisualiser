@@ -56,6 +56,7 @@ class App:
         self.label(body,'stretch',wraplength=980).pack(anchor='w',pady=(10,3))
         actions=ttk.Frame(body);actions.pack(fill='x',pady=6)
         self.generate=self.label(actions,'generate',kind=ttk.Button,command=self.start);self.generate.pack(side='left')
+        self.config_generate=self.label(actions,'media_config',kind=ttk.Button,command=self.start_config);self.config_generate.pack(side='left',padx=8)
         self.cancel=self.label(actions,'cancel',kind=ttk.Button,command=self.stop,state='disabled');self.cancel.pack(side='left',padx=8)
         self.reveal=self.label(actions,'reveal',kind=ttk.Button,command=lambda:open_folder(self.output),state='disabled');self.reveal.pack(side='left')
         self.status=tk.StringVar(value=self.tr('idle'))
@@ -109,7 +110,26 @@ class App:
             argv,self.output=prepare_job({k:v.get() for k,v in self.fields.items()})
             self.process=start_job(argv,self.output)
         except Exception as error:messagebox.showerror(self.tr('cannot_start'),self.error_text(error));return
-        self.generate.config(state='disabled');self.cancel.config(state='normal');self.reveal.config(state='normal')
+        self.begin_poll()
+
+    def start_config(self):
+        """Choose an explicit native/four-station configuration and a new output."""
+        config=filedialog.askopenfilename(title=self.tr('media_config'),filetypes=[('JSON','*.json')])
+        if not config:return
+        folder=filedialog.askdirectory(title=self.tr('output'))
+        if not folder:return
+        try:
+            from .make_station_media import load_config
+            load_config(config)
+            self.output=Path(folder)/datetime.utcnow().strftime('occultation_%Y%m%d_%H%M%S_%f')
+            self.output.mkdir(parents=True)
+            self.process=start_job(['--media-config',config,'--output-dir',str(self.output/'media')],self.output)
+        except Exception as error:messagebox.showerror(self.tr('cannot_start'),self.error_text(error));return
+        self.begin_poll()
+
+    def begin_poll(self):
+        self.generate.config(state='disabled');self.config_generate.config(state='disabled')
+        self.cancel.config(state='normal');self.reveal.config(state='normal')
         self.progress.start();self.set_status('running');self.poll()
 
     def poll(self):
@@ -118,7 +138,7 @@ class App:
             self.log.config(state='normal');self.log.delete('1.0','end')
             self.log.insert('end',log.read_text(encoding='utf-8',errors='replace')[-12000:]);self.log.see('end');self.log.config(state='disabled')
         if self.process.poll() is None:self.root.after(500,self.poll);return
-        self.progress.stop();self.generate.config(state='normal');self.cancel.config(state='disabled')
+        self.progress.stop();self.generate.config(state='normal');self.config_generate.config(state='normal');self.cancel.config(state='disabled')
         result=self.output/'result.json'
         if result.exists():
             data=json.loads(result.read_text(encoding='utf-8'))

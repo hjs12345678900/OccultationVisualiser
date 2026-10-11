@@ -61,8 +61,23 @@ class SerSource:
                 stream.seek(self.trailer + 8*index)
                 ticks = struct.unpack('<Q', stream.read(8))[0]
                 if ticks:
+                    info['utc_ns'] = (ticks - 621355968000000000)*100
                     info['utc'] = (datetime(1, 1, 1) + timedelta(microseconds=ticks//10)).isoformat()
         return pixels, info
+
+    def timing_records(self, indices):
+        """Return exact 100-ns UTC ticks without decoding detector pixels.
+
+        Strict display mode requires a complete, positive, increasing trailer.
+        Reject duplicate or missing times rather than reconstructing cadence.
+        """
+        if not self.has_times:
+            raise ValueError('SER requires its original per-frame UTC trailer')
+        ticks = np.memmap(self.path, dtype='<i8', mode='r', offset=self.trailer, shape=(self.count,))
+        if np.any(ticks <= 0) or np.any(np.diff(ticks) <= 0):
+            raise ValueError('SER UTC must be positive and strictly increasing')
+        if any(i < 0 or i >= self.count for i in indices): raise IndexError('SER index out of range')
+        return {i: {'source_index': i, 'utc_ns': int(ticks[i]-621355968000000000)*100} for i in indices}
 
 
 class FitsSource:
@@ -104,7 +119,7 @@ class FitsSource:
             data = hdus[hdu].data
             image = (data[plane] if data.ndim == 3 else data).copy()
             info = {'source_index': index, 'file': str(file), 'plane': plane,
-                    'header_timing': {k: hdus[hdu].header[k] for k in ('DATE-OBS','DATE-BEG','DATE-END','EXPTIME','TIMESYS') if k in hdus[hdu].header}}
+                    'header_timing': {k: hdus[hdu].header[k] for k in ('DATE-OBS','DATE-AVG','DATE-BEG','DATE-END','EXPTIME','TIMESYS') if k in hdus[hdu].header}}
         return image, info
 
 

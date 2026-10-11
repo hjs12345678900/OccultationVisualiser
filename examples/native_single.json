@@ -1,0 +1,28 @@
+{
+  "event": "Example_event",
+  "target": "Target",
+  "date_utc": "2026-09-12",
+  "alignment": "absolute_utc",
+  "start_utc": "2026-09-12T09:54:20",
+  "end_utc": "2026-09-12T09:54:45",
+  "step_s": 0.3,
+  "language": "both",
+  "output_root": "../outputs/native",
+  "stations": [
+    {
+      "name": "Observer",
+      "curve_format": "pymovie_csv",
+      "curve": "../data/pymovie_native.csv",
+      "target_column": "signal-target",
+      "source": "../data/recording.ser",
+      "source_first_frame": 0,
+      "exposure_s": 0.3,
+      "timestamp_reference": "start",
+      "source_timestamp_reference": "start",
+      "ser_byte_order": "header",
+      "mapping_tolerance_s": 1e-09,
+      "pyote_result": "../data/pyote_raw/native_results.json",
+      "native_mode": "raw"
+    }
+  ]
+}

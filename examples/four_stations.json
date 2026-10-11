@@ -1,0 +1,73 @@
+{
+  "event": "Four_station_event",
+  "target": "Target",
+  "date_utc": "2026-09-12",
+  "alignment": "absolute_utc",
+  "start_utc": "2026-09-12T09:54:20",
+  "end_utc": "2026-09-12T09:54:45",
+  "step_s": 0.5,
+  "language": "both",
+  "output_root": "../outputs/four_stations",
+  "stations": [
+    {
+      "name": "Observer 1",
+      "curve_format": "pymovie_csv",
+      "curve": "../data/station_1/pymovie_native.csv",
+      "target_column": "signal-target",
+      "source": "../data/station_1/recording.ser",
+      "source_first_frame": 0,
+      "exposure_s": 0.3,
+      "timestamp_reference": "start",
+      "source_timestamp_reference": "start",
+      "ser_byte_order": "header",
+      "mapping_tolerance_s": 1e-09,
+      "pyote_result": "../data/station_1/pyote_raw/native_results.json",
+      "native_mode": "raw"
+    },
+    {
+      "name": "Observer 2",
+      "curve_format": "pymovie_csv",
+      "curve": "../data/station_2/pymovie_native.csv",
+      "target_column": "signal-target",
+      "source": "../data/station_2/recording.ser",
+      "source_first_frame": 0,
+      "exposure_s": 0.3,
+      "timestamp_reference": "start",
+      "source_timestamp_reference": "start",
+      "ser_byte_order": "header",
+      "mapping_tolerance_s": 1e-09,
+      "pyote_result": "../data/station_2/pyote_raw/native_results.json",
+      "native_mode": "raw"
+    },
+    {
+      "name": "Observer 3",
+      "curve_format": "pymovie_csv",
+      "curve": "../data/station_3/pymovie_native.csv",
+      "target_column": "signal-target",
+      "source": "../data/station_3/recording.ser",
+      "source_first_frame": 0,
+      "exposure_s": 0.3,
+      "timestamp_reference": "start",
+      "source_timestamp_reference": "start",
+      "ser_byte_order": "header",
+      "mapping_tolerance_s": 1e-09,
+      "pyote_result": "../data/station_3/pyote_raw/native_results.json",
+      "native_mode": "raw"
+    },
+    {
+      "name": "Observer 4",
+      "curve_format": "pymovie_csv",
+      "curve": "../data/station_4/pymovie_native.csv",
+      "target_column": "signal-target",
+      "source": "../data/station_4/recording.ser",
+      "source_first_frame": 0,
+      "exposure_s": 0.3,
+      "timestamp_reference": "start",
+      "source_timestamp_reference": "start",
+      "ser_byte_order": "header",
+      "mapping_tolerance_s": 1e-09,
+      "pyote_result": "../data/station_4/pyote_raw/native_results.json",
+      "native_mode": "raw"
+    }
+  ]
+}

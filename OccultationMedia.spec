@@ -3,7 +3,7 @@ from pathlib import Path
 import importlib.util
 import sys
 import tomllib
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules, copy_metadata
 root=Path(SPECPATH)
 sys.path.insert(0,str(root/'build_tools'))
 from prepare_ravf_bundle import prepare
@@ -11,6 +11,8 @@ vendor=prepare(root)
 adv=Path(importlib.util.find_spec('Adv2').origin).parent
 native='libAdvCore.dylib' if sys.platform=='darwin' else 'AdvLib.Core64.dll'
 datas=collect_data_files('imageio_ffmpeg')+[(str(root/'src/occultation_media/assets'),'occultation_media/assets')]
+for distribution in ('occultation-media','numpy','Pillow','astropy','imageio-ffmpeg'):
+    datas += copy_metadata(distribution)
 hidden=collect_submodules('ravf')+['Adv2.AdvLib','Adv2.Adv','Adv2.AdvError']
 a=Analysis([str(root/'launch.py')],pathex=[str(vendor),str(root/'src')],
            binaries=[(str(adv/'Adv2DLLlibs'/native),'Adv2/Adv2DLLlibs')],
