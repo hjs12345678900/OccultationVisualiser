@@ -11,17 +11,17 @@ vendor=prepare(root)
 adv=Path(importlib.util.find_spec('Adv2').origin).parent
 native='libAdvCore.dylib' if sys.platform=='darwin' else 'AdvLib.Core64.dll'
 datas=collect_data_files('imageio_ffmpeg')+[(str(root/'src/occultation_media/assets'),'occultation_media/assets')]
-for distribution in ('occultation-media','numpy','Pillow','astropy','imageio-ffmpeg'):
+for distribution in ('occultationvisualiser','numpy','Pillow','astropy','imageio-ffmpeg'):
     datas += copy_metadata(distribution)
 hidden=collect_submodules('ravf')+['Adv2.AdvLib','Adv2.Adv','Adv2.AdvError']
 a=Analysis([str(root/'launch.py')],pathex=[str(vendor),str(root/'src')],
            binaries=[(str(adv/'Adv2DLLlibs'/native),'Adv2/Adv2DLLlibs')],
            datas=datas,hiddenimports=hidden,excludes=['matplotlib','IPython','pytest','cv2'])
 pyz=PYZ(a.pure)
-exe=EXE(pyz,a.scripts,[],exclude_binaries=True,name='OccultationMedia',
+exe=EXE(pyz,a.scripts,[],exclude_binaries=True,name='OccultationVisualiser',
         debug=False,strip=False,upx=False,console=False,
         target_arch='x86_64' if sys.platform=='darwin' else None)
-coll=COLLECT(exe,a.binaries,a.datas,strip=False,upx=False,name='OccultationMedia')
+coll=COLLECT(exe,a.binaries,a.datas,strip=False,upx=False,name='OccultationVisualiser')
 if sys.platform=='darwin':
-    app=BUNDLE(coll,name='OccultationMedia.app',bundle_identifier='org.occultation.media',
+    app=BUNDLE(coll,name='OccultationVisualiser.app',bundle_identifier='org.occultation.media',
                info_plist={'CFBundleShortVersionString':tomllib.loads((root/'pyproject.toml').read_text())['project']['version'],'NSHighResolutionCapable':True})

@@ -28,7 +28,7 @@ def version():
     """Read the authoritative pyproject version, or installed package metadata."""
     project = Path(__file__).resolve().parents[2]/'pyproject.toml'
     if project.is_file(): return tomllib.loads(project.read_text())['project']['version']
-    return importlib.metadata.version('occultation-media')
+    return importlib.metadata.version('occultationvisualiser')
 
 
 def input_manifest(paths):

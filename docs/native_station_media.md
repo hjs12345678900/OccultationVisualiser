@@ -1,5 +1,7 @@
 # Native curves and absolute UTC station media
 
+For first-time setup, required input files and the supported PyOTE JSON schema, start with the [README](../README.md).
+
 In the desktop app choose **PyMovie / four-station JSON…**, then a JSON configuration and output folder. The application creates a fresh directory, retaining earlier results. CLI equivalents:
 
 ```bash
@@ -12,7 +14,7 @@ The examples are templates: replace input paths, dates, UTC window, exposure and
 
 ## Configuration
 
-Top-level fields: `event`, `target`, `date_utc` (first sample UTC date), `alignment: "absolute_utc"`, ISO `start_utc/end_utc`, positive `step_s`, `language: "en"/"zh"/"both"`, `output_root`, and `stations` (one or four entries). `--output-dir` overrides `output_root`. Maximum 2,000 displayed samples; increase the display step for longer timelines. Original curve samples retain their full cadence.
+Top-level fields: `event`, `target`, `date_utc` (first sample UTC date), `alignment: "absolute_utc"`, ISO `start_utc/end_utc`, `step_s >= 0.01`, `language: "en"/"zh"/"both"`, `output_root`, and `stations` (one or four entries). `--output-dir` overrides `output_root`. Between 2 and 2,000 displayed samples; increase the display step for longer timelines. Original curve samples retain their full cadence.
 
 Each station supplies:
 

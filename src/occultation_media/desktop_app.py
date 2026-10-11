@@ -12,7 +12,7 @@ class App:
     def __init__(self,root):
         self.root=root;self.process=None;self.output=None;self.fields={};self.labels=[];self.combos=[]
         self.ui_language=tk.StringVar(value="中文");self.status_key="idle"
-        root.title('Occultation Media — 掩星动画生成器');root.geometry('1080x850');root.minsize(1020,800)
+        root.title('OccultationVisualiser — 掩星动画生成器');root.geometry('1080x850');root.minsize(1020,800)
         body=ttk.Frame(root,padding=18);body.pack(fill='both',expand=True)
         top=ttk.Frame(body);top.pack(fill='x')
         self.label(top,'title',font=('',21,'bold')).pack(side='left')
@@ -78,7 +78,7 @@ class App:
         for widget,key in self.labels:widget.configure(text=self.tr(key))
         for combo,display,value,options in self.combos:
             combo.configure(values=[self.tr(o) for o in options]);display.set(self.tr(value.get()))
-        self.root.title('Occultation Media — '+self.tr('title') if self.ui_language.get()=='中文' else 'Occultation Media')
+        self.root.title('OccultationVisualiser — '+self.tr('title') if self.ui_language.get()=='中文' else 'OccultationVisualiser')
         self.status.set(self.tr(self.status_key))
 
     def set_status(self,key):

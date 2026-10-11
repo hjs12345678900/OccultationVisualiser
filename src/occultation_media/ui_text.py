@@ -1,6 +1,6 @@
 """Chinese/English desktop labels, independent of exported media language."""
 TEXT = {
- 'title': ('掩星动画生成器','Occultation Media'),
+ 'title': ('掩星动画生成器','OccultationVisualiser'),
  'subtitle': ('ADV · SER · FITS · RAVF · LC  |  星场与 Tangra 光变曲线同步导出','ADV · SER · FITS · RAVF · LC  |  Synchronized field and Tangra light curve'),
  'files': ('输入与输出','Input and output'), 'source': ('观测文件','Observation file'),
  'csv': ('Tangra CSV','Tangra CSV'), 'output': ('输出文件夹','Output folder'),

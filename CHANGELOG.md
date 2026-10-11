@@ -1,3 +1,9 @@
+# 1.4.1
+
+- Rename desktop application, distribution, build artifacts and primary commands to OccultationVisualiser; retain old commands and Python imports for compatibility.
+- Include bilingual user guides and editable JSON templates beside the packaged app.
+- Document first-use Tangra and PyMovie workflows, the saved PyOTE JSON contract, input limitations and troubleshooting in English and Chinese.
+
 # Changes
 
 ## 1.4.0
