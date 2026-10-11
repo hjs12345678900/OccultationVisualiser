@@ -30,18 +30,18 @@ class StationPanels:
         self.span = float((stop-start)/np.timedelta64(1,'s'))
         self.font = load_font(21,language)
         self.small = load_font(17,language)
-        self.size = (1920, 1440 if len(stations)==4 else 526)
+        self.size = (1920, max(526, (220 + 305*len(stations) + 1)//2*2))
         self.template = Image.new('RGB',self.size,(9,13,22))
         draw = ImageDraw.Draw(self.template)
         draw.text((28,22),f"{context['event']} · {context['target']} · {context['date_utc']}",
                   font=load_font(32,language,True),fill=(241,246,255))
-        title = '目标光变（净计数 ADU）                  原始完整星场 + 目标细节' if language=='zh' else 'Target light curves (net ADU)                   Full recorded fields + target details'
+        title = '目标光变（净计数 ADU）                  原始影像 + 目标细节' if language=='zh' else 'Target light curves (net ADU)                   Recorded images + target details'
         draw.text((28,64),title,font=self.font,fill=(184,198,220))
         for k,station in enumerate(stations):
             y = 105+k*305
             draw.rounded_rectangle((24,y,920,y+295),radius=12,fill=(12,20,34),outline=(40,57,82))
             draw.rounded_rectangle((944,y,1896,y+295),radius=12,fill=(12,20,34),outline=(40,57,82))
-            color = COLORS[k]
+            color = COLORS[k % len(COLORS)]
             draw.text((42,y+10),station['config']['name'],font=load_font(24,language,True),fill=color)
             draw.text((965,y+10),station['config']['name'],font=load_font(24,language,True),fill=color)
             values = [r.counts for r in station['rows'] if r.valid and start<=r.utc<=stop]
@@ -101,8 +101,8 @@ class StationPanels:
                 if row.utc<self.start or not row.valid:
                     previous=None;continue
                 point=(self.sx(row.utc),self.sy(k,row.counts))
-                if previous is not None: draw.line((*previous,*point),fill=COLORS[k],width=2)
-                draw.ellipse((point[0]-2,point[1]-2,point[0]+2,point[1]+2),fill=COLORS[k])
+                if previous is not None: draw.line((*previous,*point),fill=COLORS[k % len(COLORS)],width=2)
+                draw.ellipse((point[0]-2,point[1]-2,point[0]+2,point[1]+2),fill=COLORS[k % len(COLORS)])
                 previous=point
             px = self.sx(utc)
             draw.line((px,y+52,px,y+244),fill=(249,236,181,120),width=2)
@@ -118,13 +118,15 @@ class StationPanels:
             draw.text((1876,y+16),label,font=self.small,fill=(198,208,224),anchor='ra')
             if source_utc != row.utc:
                 draw.text((1876,y+42),f'Source {clock(source_utc)} UTC; curve above',font=self.small,fill=(154,169,192),anchor='ra')
+            if field.cfg.get('source','').lower().endswith('.lc'):
+                draw.text((965,y+40),'LC target cutout (35 × 35)',font=self.small,fill=(198,208,224))
             gray = field.prepared[index]
             frame=Image.fromarray(gray).convert('RGB')
             scale=min(620/frame.width,232/frame.height)
             w,h=round(frame.width*scale),round(frame.height*scale)
             left,top=962+(620-w)//2,y+48+(232-h)//2
             image.paste(frame.resize((w,h),Image.Resampling.LANCZOS),(left,top))
-            xy=row.target_xy
+            xy=(17.,17.) if field.cfg.get('source','').lower().endswith('.lc') else row.target_xy
             if xy is not None and np.isfinite(xy).all() and 0<=xy[0]<gray.shape[1] and 0<=xy[1]<gray.shape[0]:
                 x,z=left+(xy[0]+.5)*scale,top+(xy[1]+.5)*scale
                 draw.line((x+7,z-7,x+23,z-23),fill=(255,239,109),width=3)
@@ -132,6 +134,6 @@ class StationPanels:
                 crop=frame.crop((max(0,cx-18),max(0,cy-18),min(frame.width,cx+19),min(frame.height,cy+19)))
                 image.paste(crop.resize((196,196),Image.Resampling.NEAREST),(1650,y+72))
                 low=d is not None and d<=row.utc<r and utc>=d
-                draw.rectangle((1647,y+69,1849,y+271),outline=(255,73,98) if low else COLORS[k],width=3)
+                draw.rectangle((1647,y+69,1849,y+271),outline=(255,73,98) if low else COLORS[k % len(COLORS)],width=3)
         draw.text((28,self.size[1]-42),self.footer,font=self.small,fill=(168,183,204))
         return image

@@ -25,7 +25,9 @@ if not json.loads(report.read_text())['ok']:raise SystemExit('Package self-test 
 if mac:
     package=root/'dist/OccultationVisualiser-macOS-Intel'
     package.mkdir(exist_ok=True)
-    shutil.copytree(root/'dist/OccultationVisualiser.app',package/'OccultationVisualiser.app',dirs_exist_ok=True,symlinks=True)
+    staged_app=package/'OccultationVisualiser.app'
+    if staged_app.exists(): shutil.rmtree(staged_app)
+    shutil.copytree(root/'dist/OccultationVisualiser.app',staged_app,symlinks=True)
     copy_user_guide(root,package)
     archive=root/'dist/OccultationVisualiser-macOS-Intel.zip'
     subprocess.run(['ditto','-c','-k','--sequesterRsrc','--keepParent',str(package),str(archive)],check=True)

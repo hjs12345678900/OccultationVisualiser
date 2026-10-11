@@ -6,19 +6,34 @@
 
 原名 **OccultationMedia**。新构建使用 `OccultationVisualiser.app` / `OccultationVisualiser.exe` 和 `occultationvisualiser` 命令；旧 `occultation-media` 命令及 Python 导入名 `occultation_media` 保留兼容。GitHub 仓库已改名为 OccultationVisualiser；现有本地目录可以保留旧名称。
 
-## 1. 需要准备什么？
+## GUI 快速开始（v1.5）
 
-| 已有结果 | 必需文件 | 使用入口 |
-| --- | --- | --- |
-| Tangra，全星场 | 测光 CSV + 对应的 ADV2 / SER / RAVF 原始录像或 FITS 图像 | 主窗口表单 |
-| Tangra，仅目标小图 | 测光 CSV + 含目标图像的对应 `.lc` 文件 | 主表单，观测文件选择 `.lc` |
-| PyMovie，单站 | 原始导出 CSV + 对应录像或带 UTC 的 FITS 序列 + 配置 JSON | **PyMovie / 四站配置…** |
-| PyMovie + PyOTE 拟合 | 上述文件 + 符合下述字段约定的 `native_results.json`（可选） | 同一配置入口 |
-| 四站联合展示 | 每站各自的曲线和图像源 + 列出四站的 JSON | 同一配置入口 |
+所有输入都可以在窗口内完成，无需手写 JSON。
 
-**只有曲线截图、PyOTE 报告、CSV 或录像快捷方式，不能生成真实星场动画。** 当前不支持 AVI/MP4 输入；MP4 是输出格式。Tangra `.lc` 内嵌图像只有 35×35 的目标裁剪图，不能还原全星场。配置模式目前只接受 **1 或 4 站**，不接受 2、3 站。
+1. 在主窗口填写共同的 **Event、小行星／目标星、UTC 日期、显示起止 UTC、显示间隔**及输出语言。跨午夜时，结束时间填写完整日期，例如 `2026-09-13T00:00:05`。
+2. 选择或拖入输出文件夹。点击 **添加 Add** 新建 observer；双击列表或点击 **编辑 Edit** 修改，**删除 Delete** 移除。支持 1–8 位观测者，各站使用绝对 UTC。
+3. 在 observer 窗口切换 **Tangra / PyMovie–PyOTE**，选择或拖入曲线、影像及可选的 PyOTE 结果。FITS 序列使用文件夹按钮或拖入整个文件夹。每个文件框一次接收一个文件／文件夹。
+4. 每站填写姓名、曝光毫秒数、影像第 0 帧对应的原始帧号、可选 **Expected UTC**。PyMovie 目标列会从 CSV 中建议第一条 `signal-` 列；有多个目标时请核实。
+5. **高级 Advanced** 可填写保存的 D/R、目标坐标、FITS HDU、SER 字节序、已知相机时差及核验容差。无需选择 start/middle/end。
+6. 点击 **仅核验 Verify** 检查数据和原始 UTC，再点击 **生成 Generate**。在日志下方查看状态，使用 **打开输出** 查看 GIF、MP4、PNG 和时间核验记录。
+7. **保存项目 Save / 打开项目 Open** 保留公共事件和所有 observer；不需要编辑保存的 JSON。运行时另存解析后的配置，以便复现。
 
-另外准备：曲线第一个采样点的 UTC 日期、小行星／事件和目标星名称、实际曝光时长、时间戳代表曝光开始／中点／结束，以及原始录像与 CSV 的帧号对应关系。**表单曝光单位是毫秒，JSON `exposure_s` 单位是秒。** Tangra 表单的预报时刻和误差可留空。
+### 时间戳约定
+
+GUI 按当前 SharpCap 的约定：SER 和 FITS `DATE-OBS` 为曝光开始，显示时间加半曝光；`DATE-AVG` 和 ADV 为曝光中点，RAVF 使用原生曝光开始。PyMovie 曲线沿用影像源的约定；Tangra CSV 使用导出的曝光中点。保存的 PyOTE D/R 不再加半曝光。
+
+这套约定显示在窗口，并写入运行配置；原始影像与曲线仍须通过 UTC 核验。旧版 SharpCap、外部重新定时或已转换过时间的 CSV 可能不适用，核验失败时须检查来源，不应任意放宽容差。[SharpCap 作者说明](https://forums.sharpcap.co.uk/viewtopic.php?t=9540)。
+
+### 文件清单
+
+| 流程 | 文件 |
+| --- | --- |
+| Tangra 全场 | 测光 CSV（目标 1）或带时标 LC + ADV2/SER/RAVF/带 UTC 的 FITS 序列 |
+| Tangra 小图 | CSV 或 LC 曲线 + 对应 LC 影像；仅为 35×35 目标裁剪图 |
+| PyMovie | CSV + 原始影像；可选原始跟踪 CSV |
+| PyOTE 区间 | 额外提供兼容的结果 JSON，或在高级设置填写 D 与 R UTC |
+
+普通 AVI/MP4 不是输入格式。截图、报告、CSV 本身不能提供星场。严格时标模式不支持无逐帧 UTC 的 FITS cube。
 
 ## 2. 启动软件
 
@@ -37,35 +52,6 @@ python launch.py
 ```
 
 Windows 将前两行换成 `py -3.13 -m venv .venv` 和 `.venv\Scripts\activate`。可用 `python -m tkinter` 检查 Tk。安装依赖包含 FFmpeg，项目附带字体。观测文件可以保留在自己的事件目录，无需复制到代码仓库。
-
-## 3. Tangra：第一次制作
-
-1. 在 Tangra 保存 `.lc` 并导出包含帧号、UTC、信号和背景的测光 CSV。软件绘制**目标 1**，需要 `FrameNo`、`Time (UT)`、`Signal (1)`、`Background (1)` 列，计算信号减背景。
-2. **观测文件**选择原始录像；只要目标裁剪图则选 `.lc`。FITS 序列点击 **FITS 文件夹…**。选择对应 CSV 和输出目录。
-3. 填写名称、UTC 日期及曝光毫秒数；没有预报则留空。
-4. 核实**源第 0 帧对应的 CSV 帧号**。例如录像第一张图对应 CSV 第 1500 帧，就填 1500，不要默认填 0。LC 裁剪图使用内嵌帧号。
-5. 目标 X Y 默认从 CSV 读取，也可手填以 0 为起点的像素坐标。主表单的标记位置不会逐帧跟踪。选择输出语言，点击**生成动画**。
-6. 打开输出目录，先看 PNG，再播放 GIF/MP4，检查目标位置及曲线和星场变暗是否同步。自动低光区间只是展示估计；必要时手填首末低光通量帧号。
-
-主表单按帧号对齐，不进行下面配置模式的原生 UTC 严格核验。主表单支持 FITS cube；严格模式需要每张图有独立 UTC。整段动画采用固定亮度拉伸，避免自动调亮掩盖恒星变暗。
-
-## 4. PyMovie / PyOTE：编辑配置、核验、制作
-
-将 [native_single.json](examples/native_single.json) 复制到事件目录，用文本编辑器修改。它是模板，不附带可直接运行的观测数据。
-
-1. 将 `curve`、`source` 改成真实 CSV 和图像源路径。相对路径（包括 `output_root`）以 JSON 所在目录为基准。
-2. `target_column` 填 CSV 的真实列名，例如 `signal-target`。需要 `FrameNum`、`timeInfo` 和目标信号列，表头以 `FrameNum,` 开始。读取保存的净计数，不再次减背景。至少三个采样，帧号和 UTC 严格递增；不支持小数／积分帧号。
-3. 修改 `date_utc`、`start_utc`、`end_utc`、`exposure_s`、适用的时间戳约定及 `source_first_frame`。全部使用 UTC。`step_s >= 0.01`，显示帧数为 2–2,000；显示抽样不改变原曲线。
-4. 按导出精度设置 `mapping_tolerance_s`。示例的 1 ns 并非通用值。SER 必须有原生时间戳尾部，FITS 必须逐图带 UTC；不要通过任意放大容差掩盖时间差。
-5. **没有 PyOTE 结果时删除模板的 `pyote_result` 字段**，仍可制作曲线与星场，只是不显示 D/R 区间。
-6. 替换下面路径，先核验，再制作：
-
-```bash
-python launch.py --media-config "/path/to/event/media.json" --verify-only
-python launch.py --media-config "/path/to/event/media.json"
-```
-
-也可在界面点击 **PyMovie / 四站配置…**，选择编辑好的 JSON，再选择输出目录。这个入口使用 JSON 参数，与 Tangra 表单独立。四站从 [four_stations.json](examples/four_stations.json) 修改；各站共用绝对 UTC，缺少覆盖的图像留空。
 
 ### PyOTE 结果文件的具体要求
 

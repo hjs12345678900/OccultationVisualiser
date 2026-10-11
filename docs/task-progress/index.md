@@ -11,3 +11,5 @@
 - [v1.4.0 p001](v1.4.0/task-progress_v1.4.0_p001.md): TASK-0010–0013, source validation complete; package evidence on release.
 
 - [v1.4.1 p001](v1.4.1/task-progress_v1.4.1_p001.md): TASK-0014.
+
+- [v1.5.0 p001](v1.5.0/task-progress_v1.5.0_p001.md): TASK-0015.

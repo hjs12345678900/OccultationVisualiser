@@ -1,3 +1,9 @@
+# 1.5.0
+
+- Complete GUI input workflow with file browsing/drop targets, Tangra/PyMovie switching, shared events and editable 1–8 observers.
+- Save/open GUI projects; verify or generate without writing JSON.
+- Record SharpCap timing policy; preserve saved D/R. Support LC stamps and even-height multi-observer exports.
+
 # 1.4.1
 
 - Rename desktop application, distribution, build artifacts and primary commands to OccultationVisualiser; retain old commands and Python imports for compatibility.

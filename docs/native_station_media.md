@@ -2,7 +2,7 @@
 
 For first-time setup, required input files and the supported PyOTE JSON schema, start with the [README](../README.md).
 
-In the desktop app choose **PyMovie / four-station JSON…**, then a JSON configuration and output folder. The application creates a fresh directory, retaining earlier results. CLI equivalents:
+In the desktop app add/edit observers and select their files; JSON editing is optional. The application creates a fresh directory, retaining earlier results. CLI equivalents:
 
 ```bash
 python launch.py --media-config examples/native_single.json --verify-only
@@ -14,7 +14,7 @@ The examples are templates: replace input paths, dates, UTC window, exposure and
 
 ## Configuration
 
-Top-level fields: `event`, `target`, `date_utc` (first sample UTC date), `alignment: "absolute_utc"`, ISO `start_utc/end_utc`, `step_s >= 0.01`, `language: "en"/"zh"/"both"`, `output_root`, and `stations` (one or four entries). `--output-dir` overrides `output_root`. Between 2 and 2,000 displayed samples; increase the display step for longer timelines. Original curve samples retain their full cadence.
+Top-level fields: `event`, `target`, `date_utc` (first sample UTC date), `alignment: "absolute_utc"`, ISO `start_utc/end_utc`, `step_s >= 0.01`, `language: "en"/"zh"/"both"`, `output_root`, and `stations` (one to eight entries). `--output-dir` overrides `output_root`. Between 2 and 2,000 displayed samples; increase the display step for longer timelines. Original curve samples retain their full cadence.
 
 Each station supplies:
 
@@ -56,7 +56,7 @@ FITS sequences are matched by recorded UTC rather than assuming file 0 is measur
 
 ## Validation and artifacts
 
-Native single-station output is 1920×526; four-station output is 1920×1440. Each row pairs original net ADU with an entire field and a real target crop. Original orientation/aspect is retained. A station's first displayed full frame sets fixed 0.5/99.95 percentile limits and factor-8 asinh for both field and target detail.
+Native single-station output is 1920×526; four-station output is 1920×1440. Other station counts use an even-height canvas with one row per observer. Each row pairs original net ADU with an entire field and a real target crop. Original orientation/aspect is retained. A station's first displayed full frame sets fixed 0.5/99.95 percentile limits and factor-8 asinh for both field and target detail.
 
 Outputs include bilingual H.264/yuv420p MP4, scaled GIF, PNG previews, stages/contact sheets, resolved configuration, source snapshot, `media_metadata.json` and `run_metadata.json`. Input hashes are checked again after generation. This verifies consistency with recorded clocks; it does not independently calibrate those clocks.
 

@@ -5,6 +5,7 @@ import json
 import numpy as np
 from .read_station_curves import read_station_curve
 from .prepare_station_frames import StationFrames, nearest_sample
+from .prepare_lc_frames import LCFrames
 from .read_saved_transitions import saved_transitions
 from .record_media_run import write_json, input_manifest, finish_record, sha256, snapshot_code
 from .utc_conventions import utc_ns
@@ -15,13 +16,13 @@ from .encode_station_media import encode_station_language
 def load_config(path):
     """Resolve user-supplied JSON file paths relative to its location.
 
-    One or four stations, explicit absolute UTC window and timestamp rules.
+    One to eight stations, explicit absolute UTC window and timestamp rules.
     Relative files make shareable examples possible without embedding local data.
     """
     path = Path(path).expanduser().resolve()
     cfg = json.loads(path.read_text(encoding='utf-8'))
-    if cfg.get('alignment') != 'absolute_utc' or len(cfg.get('stations',[])) not in (1,4):
-        raise ValueError('Require one or four stations and alignment=absolute_utc')
+    if cfg.get('alignment') != 'absolute_utc' or not 1 <= len(cfg.get('stations',[])) <= 8:
+        raise ValueError('Require one to eight stations and alignment=absolute_utc')
     for values in [cfg, *cfg['stations']]:
         for key in ('curve','source','output_root','pyote_result','tracking_csv','timing_source_file','adv_python'):
             if values.get(key):
@@ -62,7 +63,7 @@ def make_station_media(config_path, output_dir=None, verify_only=False):
             rows, native, info, curve_paths = read_station_curve(c, cfg['date_utc'])
             if c.get('source_sha256') and sha256(c['source']) != c['source_sha256']:
                 raise ValueError('Source hash differs from saved photometry recording')
-            frames = StationFrames(c, rows, native)
+            frames = (LCFrames if Path(c['source']).suffix.lower()=='.lc' else StationFrames)(c, rows, native)
             station = dict(config=c, rows=rows, frames=frames, D=None, R=None, curve_info=info)
             stations.append(station)
             station['D'], station['R'], station['timing'] = saved_transitions(c, rows)

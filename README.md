@@ -6,19 +6,34 @@ Turn an occultation observation into a synchronized star-field and light-curve a
 
 Previously **OccultationMedia**. New builds use `OccultationVisualiser.app` / `OccultationVisualiser.exe` and the `occultationvisualiser` command. The Python import `occultation_media` and old `occultation-media` commands remain compatible. The GitHub repository is now OccultationVisualiser; existing local checkouts may retain the old folder name.
 
-## 1. Prepare your files
+## GUI quick start (v1.5)
 
-| Your existing result | Required files | How to open it |
-| --- | --- | --- |
-| Tangra, full recorded field | Tangra photometry CSV **and** the matching ADV2 / SER / RAVF recording or FITS images | Main desktop form |
-| Tangra, target cutout only | Tangra photometry CSV **and** matching Tangra `.lc` file containing target stamps | Main desktop form; select `.lc` as observation file |
-| PyMovie, one observer | Saved PyMovie CSV **and** matching original recording or timed FITS sequence **and** a configuration JSON | **PyMovie / four-station JSON…** |
-| PyMovie with saved PyOTE fit | The preceding files **plus** compatible `native_results.json` (optional D/R overlay) | Same JSON workflow |
-| Four observers | One curve and image source per observer, with one JSON listing exactly four stations | Same JSON workflow |
+All inputs are available in the desktop window; writing JSON is not required.
 
-**A plot screenshot, PyOTE report alone, CSV alone, or a shortcut to a recording cannot supply the recorded star-field images.** Ordinary AVI/MP4 input is not implemented. MP4 is an output format. A Tangra LC stamp contains only a 35×35 target cutout, not the full field. Configuration mode currently accepts **one or four**, not two or three, stations.
+1. Fill in the shared **event, target star, UTC date, display start/end UTC, display step** and output language. Across midnight, enter a full end date-time, e.g. `2026-09-13T00:00:05`.
+2. Choose or drop an output folder. **Add**, **Edit** (or double-click), and **Delete** manage 1–8 observers sharing absolute UTC.
+3. In each observer editor, switch **Tangra / PyMovie–PyOTE**, then browse or drop the curve, image source and optional PyOTE result. Use the FITS-folder button or drop a whole sequence folder. Each file box accepts one file/folder at a time.
+4. Set the observer name, exposure in milliseconds, original frame ID at source index 0, and optional observer-specific **Expected UTC**. The first `signal-` CSV column is suggested for PyMovie; verify it if several targets exist.
+5. **Advanced** contains supplied D/R, target coordinates, FITS HDU, SER byte order, known camera offset and UTC tolerance. There is no start/middle/end selector.
+6. **Verify** checks inputs and native timestamps without encoding. **Generate** creates GIF, MP4 and PNG; use **Open output** to inspect media and timestamp audit records.
+7. **Save / Open** retains shared event information and all observers as a GUI project. No JSON editing is needed. Each run separately saves its resolved configuration for reproducibility.
 
-Also collect: the UTC date of the first curve sample, asteroid/event and star names, actual exposure duration, timestamp convention (exposure start/midpoint/end), and frame mapping. GUI exposure is in **milliseconds**; JSON `exposure_s` is in **seconds**. Predicted UTC and ± uncertainty are optional in the Tangra form.
+### Timestamp policy
+
+For current SharpCap recordings, SER and FITS `DATE-OBS` mean exposure start and receive half an exposure for midpoint display. `DATE-AVG` and ADV are midpoint; RAVF uses its native start. PyMovie follows the image-source convention; Tangra CSV is interpreted as exported midpoint UTC. Saved PyOTE D/R is never shifted again.
+
+The policy appears in the GUI and saved configuration. Source and curve UTC must still agree. Older SharpCap versions, externally retimed data or already-converted CSVs may differ: investigate mismatches rather than arbitrarily enlarging tolerance. [SharpCap author's explanation](https://forums.sharpcap.co.uk/viewtopic.php?t=9540).
+
+### Input checklist
+
+| Workflow | Files |
+| --- | --- |
+| Tangra full field | Photometry CSV (object 1) or timed LC curve + ADV2/SER/RAVF/timed FITS sequence |
+| Tangra cutout | CSV or LC curve + matching LC image source; only the 35×35 recorded target stamp |
+| PyMovie | CSV + original image source; optional original tracking CSV |
+| PyOTE interval | Add compatible result JSON, or enter both D/R UTC in Advanced |
+
+AVI/MP4 are not supported inputs. Screenshots, reports and CSV alone cannot provide recorded images. Strict timing mode does not accept FITS cubes without individual frame times.
 
 ## 2. Start the application
 
@@ -37,35 +52,6 @@ python launch.py
 ```
 
 On Windows use `py -3.13 -m venv .venv`, then `.venv\Scripts\activate` instead of the first two commands. `python -m tkinter` checks whether Tk is available. The installation includes the FFmpeg dependency and bundled fonts. Keep observation files in your own event folder; no copying into this repository is required.
-
-## 3. Tangra: easiest first animation
-
-1. In Tangra, save the light-curve `.lc` and export photometry CSV with frame numbers, UTC, target signal and background. Target **object 1** is plotted. The parser expects `FrameNo`, `Time (UT)`, `Signal (1)` and `Background (1)` columns; it subtracts background once.
-2. Select the original recording (or `.lc` for cutouts) as **Observation file**. For a FITS sequence use **FITS folder…**. Select its CSV and an output folder.
-3. Fill in the names, UTC date and exposure in ms. Leave prediction fields blank if unavailable.
-4. Set **CSV frame at source index 0** from the actual recording/export: e.g. `1500` if the first image corresponds to CSV frame 1500. Do not assume it is zero. LC cutouts use embedded frame IDs.
-5. Optionally enter target pixel X Y (zero based); otherwise the initial position is read from CSV. The main-form marker does not track motion. Choose output language and press **Generate**.
-6. Open the result folder and inspect the PNG, then play the GIF/MP4. Check the target position and simultaneous fading in the curve and image. The auto-detected low interval is only a visualization estimate; use **First/last low frames** to specify it when needed.
-
-This form aligns images by frame index. It does **not** perform the strict native timestamp audit below. FITS cubes can be used here; strict configuration mode requires individually timed images. Rendering uses one fixed brightness stretch across the clip, so fading is not hidden by per-frame auto-contrast.
-
-## 4. PyMovie / PyOTE: configure, verify, render
-
-Copy [examples/native_single.json](examples/native_single.json) into your event folder. It is a template, not a runnable example dataset. Edit it in a text editor:
-
-1. Replace `curve` and `source` with your real CSV and recording paths. Relative paths are resolved against the JSON's folder, including `output_root`.
-2. Set `target_column` to the exact CSV name, e.g. `signal-target`. Required columns are `FrameNum`, `timeInfo` and the selected signal column; the header begins with `FrameNum,`. Saved signal values are already net counts and are used unchanged. At least three samples with increasing integer frame IDs and UTC are required; fractional/integrated frame IDs are rejected.
-3. Set `date_utc`, `start_utc`, `end_utc`, `exposure_s`, both applicable timestamp conventions, and `source_first_frame`. Use UTC, not local clock time. Choose `step_s >= 0.01`; the displayed timeline must contain 2–2,000 frames. This changes display sampling, not the saved photometry.
-4. Set `mapping_tolerance_s` from actual timestamp precision. The example's 1 ns tolerance is intentionally strict and is not a universal recording setting. SER needs its timestamp trailer; FITS needs per-image UTC. Do not enlarge tolerance to conceal an unexplained offset.
-5. **If no PyOTE fit is available, remove `pyote_result`** from the template. Curves and images still render without an event overlay. For saved fits, use the contract below.
-6. Verify first, then render (replace the path with your edited JSON):
-
-```bash
-python launch.py --media-config "/path/to/event/media.json" --verify-only
-python launch.py --media-config "/path/to/event/media.json"
-```
-
-Alternatively choose **PyMovie / four-station JSON…** in the app, select your edited JSON, then choose an output folder. This button uses JSON settings independently of the Tangra form. For four stations start from [four_stations.json](examples/four_stations.json); all rows share absolute UTC, with unavailable images blank.
 
 ### What counts as a supported PyOTE result?
 

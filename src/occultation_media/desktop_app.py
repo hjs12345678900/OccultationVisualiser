@@ -1,159 +1,121 @@
-"""Tk desktop form for independent Windows and macOS observation processing."""
-from datetime import datetime
+"""Complete event and observer workspace; JSON is an optional saved project."""
+from datetime import datetime, timezone
 from pathlib import Path
 import json
 import tkinter as tk
-from tkinter import ttk,filedialog,messagebox
-from .ui_text import text
-from .desktop_job import prepare_job,start_job,cancel_job,open_folder
+from tkinter import ttk, filedialog, messagebox
+from .desktop_controls import JobControls
+from .desktop_job import start_job
+from .gui_config import build_config, TIMING_NOTE
+from .gui_observer import ObserverDialog, DEFAULTS, path_entry
 
 
-class App:
+class App(JobControls):
+    """Shared event fields and independently editable observer inputs."""
     def __init__(self,root):
-        self.root=root;self.process=None;self.output=None;self.fields={};self.labels=[];self.combos=[]
-        self.ui_language=tk.StringVar(value="中文");self.status_key="idle"
-        root.title('OccultationVisualiser — 掩星动画生成器');root.geometry('1080x850');root.minsize(1020,800)
-        body=ttk.Frame(root,padding=18);body.pack(fill='both',expand=True)
-        top=ttk.Frame(body);top.pack(fill='x')
-        self.label(top,'title',font=('',21,'bold')).pack(side='left')
-        ttk.Label(top,text='界面语言 / Interface').pack(side='right',padx=8)
-        selector=ttk.Combobox(top,textvariable=self.ui_language,values=('中文','English'),state='readonly',width=10)
-        selector.pack(side='right');selector.bind('<<ComboboxSelected>>',self.change_language)
-        self.label(body,'subtitle').pack(anchor='w',pady=(4,12))
-        files=self.label(body,'files',kind=ttk.LabelFrame,padding=10);files.pack(fill='x')
-        for key,label in [('source','观测文件'),('csv','Tangra CSV'),('output','输出文件夹')]:
-            row=ttk.Frame(files);row.pack(fill='x',pady=3)
-            self.label(row,key,width=16).pack(side='left')
-            var=tk.StringVar();self.fields[key]=var
-            ttk.Entry(row,textvariable=var).pack(side='left',fill='x',expand=True)
-            self.label(row,'browse',kind=ttk.Button,command=lambda k=key:self.choose(k)).pack(side='left',padx=(6,0))
-            if key=='source':self.label(row,'fits_folder',kind=ttk.Button,command=self.choose_fits).pack(side='left',padx=(6,0))
-        form=self.label(body,'observation',kind=ttk.LabelFrame,padding=10);form.pack(fill='x',pady=10)
-        entries=[('asteroid','小行星名称',''),('star','目标星名称','Target'),
-                 ('date','事件日期 YYYY-MM-DD',datetime.utcnow().strftime('%Y-%m-%d')),
-                 ('predicted','预报中点 HH:MM:SS',''),('uncertainty','预报 ± 误差（秒）',''),
-                 ('exposure','曝光时间（毫秒）',''),('first','源第 0 帧对应的 CSV 帧号','0'),
-                 ('margin','事件前后各保留（秒）','5')]
-        for i,(key,label,value) in enumerate(entries):
-            r,c=divmod(i,2);self.add_entry(form,r,c*2,key,label,value)
-        for c in (1,3):form.columnconfigure(c,weight=1)
-        self.label(form,'mapping',wraplength=980).grid(row=4,column=0,columnspan=4,sticky='w',pady=(8,0))
-        more=self.label(body,'optional',kind=ttk.LabelFrame,padding=10);more.pack(fill='x')
-        for i,(key,label,value) in enumerate([('low','首末低光通量帧号（可留空）',''),('target','目标像素 X Y（可留空）',''),
-                                              ('stride','每 N 帧显示一帧','1'),('hdu','FITS HDU（可留空）','')]):
-            r,c=divmod(i,2);self.add_entry(more,r,c*2,key,label,value)
-        for c in (1,3):more.columnconfigure(c,weight=1)
-        row=ttk.Frame(more);row.grid(row=2,column=0,columnspan=4,sticky='w',pady=6)
-        for key,label,options,default in [('language','输出语言',('both','zh','en'),'both'),('byte_order','SER 字节序',('header','little','big'),'header')]:
-            self.label(row,key).pack(side='left',padx=(0,6));var=tk.StringVar(value=default);self.fields[key]=var
-            display=tk.StringVar(value=self.tr(default))
-            combo=ttk.Combobox(row,textvariable=display,values=[self.tr(o) for o in options],state='readonly',width=18)
-            combo.pack(side='left',padx=(0,18))
-            combo.bind('<<ComboboxSelected>>',lambda event,v=var,c=combo,o=options:v.set(o[c.current()]))
-            self.combos.append((combo,display,var,options))
-        self.fields['mp4']=tk.BooleanVar(value=True)
-        self.label(row,'mp4',kind=ttk.Checkbutton,variable=self.fields['mp4']).pack(side='left')
-        self.label(body,'stretch',wraplength=980).pack(anchor='w',pady=(10,3))
-        actions=ttk.Frame(body);actions.pack(fill='x',pady=6)
-        self.generate=self.label(actions,'generate',kind=ttk.Button,command=self.start);self.generate.pack(side='left')
-        self.config_generate=self.label(actions,'media_config',kind=ttk.Button,command=self.start_config);self.config_generate.pack(side='left',padx=8)
-        self.cancel=self.label(actions,'cancel',kind=ttk.Button,command=self.stop,state='disabled');self.cancel.pack(side='left',padx=8)
-        self.reveal=self.label(actions,'reveal',kind=ttk.Button,command=lambda:open_folder(self.output),state='disabled');self.reveal.pack(side='left')
-        self.status=tk.StringVar(value=self.tr('idle'))
-        ttk.Label(body,textvariable=self.status,wraplength=900).pack(anchor='w')
-        self.progress=ttk.Progressbar(body,mode='indeterminate');self.progress.pack(fill='x',pady=6)
-        self.log=tk.Text(body,height=6,wrap='word',state='disabled');self.log.pack(fill='both',expand=True)
+        self.root=root;self.process=None;self.output=None;self.observers=[]
+        self.ui_language=tk.StringVar(value='中文');self.status_key='idle'
+        self.labels=[];self.combos=[];self.fields={}
+        root.title('OccultationVisualiser');root.geometry('1100x850');root.minsize(900,760)
+        body=ttk.Frame(root,padding=16);body.pack(fill='both',expand=True)
+        ttk.Label(body,text='OccultationVisualiser',font=('',22,'bold')).pack(anchor='w')
+        ttk.Label(body,text='共同事件 Shared event → 添加观测者 Add observers → 核验 / 生成 Verify / Generate').pack(anchor='w',pady=6)
+        event=ttk.LabelFrame(body,text='事件信息 · 所有 observer 共用',padding=10);event.pack(fill='x')
+        fields=[('event','小行星 / Event',''),('target','目标星 / Target',''),
+                ('date_utc','UTC 日期',datetime.now(timezone.utc).strftime('%Y-%m-%d')),
+                ('start_utc','开始 UTC (HH:MM:SS)',''),('end_utc','结束 UTC (HH:MM:SS)',''),
+                ('step_s','显示间隔 / Step (s)','0.1')]
+        for i,(key,label,default) in enumerate(fields):
+            row,col=divmod(i,2);self.fields[key]=tk.StringVar(value=default)
+            ttk.Label(event,text=label).grid(row=row,column=col*2,sticky='w',padx=4,pady=4)
+            ttk.Entry(event,textvariable=self.fields[key]).grid(row=row,column=col*2+1,sticky='ew',padx=4)
+        for c in (1,3):event.columnconfigure(c,weight=1)
+        self.fields['language']=tk.StringVar(value='both')
+        ttk.Label(event,text='输出语言 / Language').grid(row=3,column=0,sticky='w')
+        ttk.Combobox(event,textvariable=self.fields['language'],values=('both','en','zh'),state='readonly').grid(row=3,column=1,sticky='ew')
+        output=ttk.Frame(body);output.pack(fill='x',pady=8);output.columnconfigure(1,weight=1)
+        self.fields['output_root']=tk.StringVar()
+        path_entry(output,self.fields['output_root'],0,'输出文件夹 / Output',True)
+        observers=ttk.LabelFrame(body,text='Observers · 每站独立文件、曝光与 expected time',padding=10);observers.pack(fill='both',expand=True)
+        self.tree=ttk.Treeview(observers,columns=('mode','curve','expected'),show='tree headings',height=7,selectmode='browse')
+        for key,label,width in [('#0','Observer',150),('mode','来源 / Mode',150),('curve','曲线 / Curve',400),('expected','Expected UTC',150)]:
+            self.tree.heading(key,text=label);self.tree.column(key,width=width)
+        self.tree.pack(fill='both',expand=True);self.tree.bind('<Double-1>',lambda _:self.edit_observer())
+        row=ttk.Frame(observers);row.pack(fill='x',pady=6)
+        for label,action in [('添加 Add',self.add_observer),('编辑 Edit',self.edit_observer),('删除 Delete',self.delete_observer)]:
+            ttk.Button(row,text=label,command=action).pack(side='left',padx=3)
+        ttk.Label(body,text=TIMING_NOTE,wraplength=1030).pack(anchor='w',pady=8)
+        actions=ttk.Frame(body);actions.pack(fill='x',pady=5)
+        self.generate=ttk.Button(actions,text='生成 Generate',command=self.start);self.generate.pack(side='left')
+        self.config_generate=ttk.Button(actions,text='仅核验 Verify',command=lambda:self.start(True));self.config_generate.pack(side='left',padx=5)
+        ttk.Button(actions,text='保存项目 Save',command=self.save_project).pack(side='left',padx=5)
+        ttk.Button(actions,text='打开项目 Open',command=self.open_project).pack(side='left',padx=5)
+        self.cancel=ttk.Button(actions,text='取消 Cancel',command=self.stop,state='disabled');self.cancel.pack(side='left')
+        from .desktop_job import open_folder
+        self.reveal=ttk.Button(actions,text='打开输出 Open output',command=lambda:open_folder(self.output),state='disabled');self.reveal.pack(side='left',padx=5)
+        self.status=tk.StringVar(value='添加 observer；可选择或拖入文件。 Add an observer to begin.')
+        ttk.Label(body,textvariable=self.status).pack(anchor='w')
+        self.progress=ttk.Progressbar(body,mode='indeterminate');self.progress.pack(fill='x',pady=5)
+        self.log=tk.Text(body,height=5,wrap='word',state='disabled');self.log.pack(fill='x')
         root.protocol('WM_DELETE_WINDOW',self.close)
-        self.change_language()
 
-    def tr(self,key):
-        return text(key,'zh' if self.ui_language.get()=='中文' else 'en')
+    def refresh(self):
+        self.tree.delete(*self.tree.get_children())
+        for i,o in enumerate(self.observers):
+            self.tree.insert('', 'end',iid=str(i),text=o['name'],values=(o['mode'],Path(o['curve']).name,o['predicted_utc']))
 
-    def label(self,parent,key,kind=ttk.Label,**options):
-        widget=kind(parent,text=self.tr(key),**options);self.labels.append((widget,key))
-        return widget
+    def add_observer(self):
+        if len(self.observers)>=8:
+            messagebox.showerror('Observers','最多 8 位 / Maximum 8');return
+        def save(values):self.observers.append(values);self.refresh()
+        ObserverDialog(self.root,{**DEFAULTS,'name':f'Observer {len(self.observers)+1}'},save)
 
-    def change_language(self,event=None):
-        # Configure existing widgets: input values and running jobs survive.
-        for widget,key in self.labels:widget.configure(text=self.tr(key))
-        for combo,display,value,options in self.combos:
-            combo.configure(values=[self.tr(o) for o in options]);display.set(self.tr(value.get()))
-        self.root.title('OccultationVisualiser — '+self.tr('title') if self.ui_language.get()=='中文' else 'OccultationVisualiser')
-        self.status.set(self.tr(self.status_key))
+    def edit_observer(self):
+        selected=self.tree.selection()
+        if not selected:return
+        index=int(selected[0])
+        def save(values):self.observers[index]=values;self.refresh()
+        ObserverDialog(self.root,self.observers[index],save)
 
-    def set_status(self,key):
-        self.status_key=key;self.status.set(self.tr(key))
+    def delete_observer(self):
+        selected=self.tree.selection()
+        if selected:self.observers.pop(int(selected[0]));self.refresh()
 
-    def error_text(self,error):
-        key=str(error)
-        return self.tr(key) if key.startswith('err_') else self.tr('unexpected')+' '+key
+    def save_project(self):
+        path=filedialog.asksaveasfilename(defaultextension='.json',filetypes=[('Project JSON','*.json')])
+        if path:
+            data=dict(gui_version=1,event={k:v.get() for k,v in self.fields.items()},observers=self.observers)
+            Path(path).write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding='utf-8')
 
-    def add_entry(self,parent,row,column,key,label,value):
-        self.label(parent,key).grid(row=row,column=column,sticky='w',padx=(0,8),pady=4)
-        var=tk.StringVar(value=value);self.fields[key]=var
-        ttk.Entry(parent,textvariable=var,width=20).grid(row=row,column=column+1,sticky='ew',padx=(0,18),pady=4)
-
-    def choose(self,key):
-        if key=='output':value=filedialog.askdirectory(title=self.tr('output'))
-        elif key=='csv':value=filedialog.askopenfilename(filetypes=[('Tangra CSV','*.csv'),(self.tr('all_files'),'*')])
-        else:value=filedialog.askopenfilename(filetypes=[(self.tr('source'),'*.adv *.ser *.fits *.fit *.fts *.ravf *.lc'),(self.tr('all_files'),'*')])
-        if value:
-            self.fields[key].set(value)
-            if key=='source' and not self.fields['output'].get():self.fields['output'].set(str(Path(value).parent/'media'))
-
-    def choose_fits(self):
-        value=filedialog.askdirectory(title=self.tr('fits_prompt'))
-        if value:self.fields['source'].set(value)
-
-    def start(self):
+    def open_project(self):
+        path=filedialog.askopenfilename(filetypes=[('Project JSON','*.json')])
+        if not path:return
         try:
-            argv,self.output=prepare_job({k:v.get() for k,v in self.fields.items()})
-            self.process=start_job(argv,self.output)
-        except Exception as error:messagebox.showerror(self.tr('cannot_start'),self.error_text(error));return
-        self.begin_poll()
+            data=json.loads(Path(path).read_text(encoding='utf-8'))
+            if data.get('gui_version')!=1 or not isinstance(data['observers'],list) or len(data['observers'])>8:
+                raise ValueError('Choose a saved GUI project / 请选择 GUI 保存的项目')
+            values={k:str(data['event'][k]) for k in self.fields}
+            observers=[{k:str(o.get(k,v)) for k,v in DEFAULTS.items()} for o in data['observers']]
+            for k,v in values.items():self.fields[k].set(v)
+            self.observers=observers;self.refresh()
+        except Exception as e:messagebox.showerror('Open project',str(e))
 
-    def start_config(self):
-        """Choose an explicit native/four-station configuration and a new output."""
-        config=filedialog.askopenfilename(title=self.tr('media_config'),filetypes=[('JSON','*.json')])
-        if not config:return
-        folder=filedialog.askdirectory(title=self.tr('output'))
-        if not folder:return
+    def start(self,verify_only=False):
         try:
-            from .make_station_media import load_config
-            load_config(config)
-            self.output=Path(folder)/datetime.utcnow().strftime('occultation_%Y%m%d_%H%M%S_%f')
+            self.verify_only=verify_only
+            cfg=build_config({k:v.get() for k,v in self.fields.items()},self.observers)
+            self.output=Path(cfg['output_root'])/datetime.now(timezone.utc).strftime('occultation_%Y%m%d_%H%M%S_%f')
             self.output.mkdir(parents=True)
-            self.process=start_job(['--media-config',config,'--output-dir',str(self.output/'media')],self.output)
-        except Exception as error:messagebox.showerror(self.tr('cannot_start'),self.error_text(error));return
+            config=self.output/'config.json';config.write_text(json.dumps(cfg,ensure_ascii=False,indent=2),encoding='utf-8')
+            argv=['--media-config',str(config),'--output-dir',str(self.output/'media')]
+            if verify_only:argv.append('--verify-only')
+            self.process=start_job(argv,self.output)
+        except Exception as e:messagebox.showerror('检查输入 / Check inputs',str(e));return
         self.begin_poll()
-
-    def begin_poll(self):
-        self.generate.config(state='disabled');self.config_generate.config(state='disabled')
-        self.cancel.config(state='normal');self.reveal.config(state='normal')
-        self.progress.start();self.set_status('running');self.poll()
-
-    def poll(self):
-        log=self.output/'run.log'
-        if log.exists():
-            self.log.config(state='normal');self.log.delete('1.0','end')
-            self.log.insert('end',log.read_text(encoding='utf-8',errors='replace')[-12000:]);self.log.see('end');self.log.config(state='disabled')
-        if self.process.poll() is None:self.root.after(500,self.poll);return
-        self.progress.stop();self.generate.config(state='normal');self.config_generate.config(state='normal');self.cancel.config(state='disabled')
-        result=self.output/'result.json'
-        if result.exists():
-            data=json.loads(result.read_text(encoding='utf-8'))
-            self.set_status('done' if data['ok'] else 'failed')
-        else:self.set_status('ended')
-
-    def stop(self):
-        if self.process:cancel_job(self.process)
-
-    def close(self):
-        if self.process and self.process.poll() is None:self.stop()
-        self.root.destroy()
 
 
 def run(smoke=False):
-    root=tk.Tk();App(root)
+    from tkinterdnd2 import TkinterDnD
+    root=TkinterDnD.Tk();App(root)
     if smoke:root.after(1500,root.destroy)
     root.mainloop()
