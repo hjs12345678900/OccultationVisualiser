@@ -71,6 +71,13 @@ def run():
             stations=[dict(name='Observer',curve_format='pymovie_csv',curve='native.csv',target_column='signal-target',
                 source='frames.ser',source_first_frame=0,exposure_s=.3,timestamp_reference='start',source_timestamp_reference='start',mapping_tolerance_s=1e-9)])
         config=root/'native.json';config.write_text(json.dumps(cfg))
+        # Build the same native job through new automatic desktop defaults.
+        from .gui_config import build_config
+        from .gui_observer import DEFAULTS
+        (root/'frames.CameraSettings.txt').write_text('Exposure=300ms\n')
+        automatic=build_config(dict(event='Native',target='Target',date_utc='2026-01-01',step_s='.3',language='both',window_mode='full',skip_gaps='skip',output_root=str(root)),
+            [dict(DEFAULTS,curve=str(root/'native.csv'),source=str(root/'frames.ser'))])
+        config.write_text(json.dumps(automatic))
         with contextlib.redirect_stdout(io.StringIO()):make_station_media(config,root/'native_media')
         record=json.loads((root/'native_media/run_metadata.json').read_text())
         if not record['input_integrity_verified']:raise AssertionError('Native input integrity failed')
@@ -87,4 +94,4 @@ def run():
                 if image.n_frames!=6:raise AssertionError('Native GIF elapsed timeline differs')
     return {'ok':True,'system':platform.system(),'architecture':platform.machine(),
             'exports':['SER','FITS','RAVF','native PyMovie SER'],'languages':['en','zh'],'outputs':['GIF','PNG','MP4'],
-            'noise_diagnostics':True,'ffmpeg':ffmpeg_executable(),'adv':'Requires separate real-observation smoke test'}
+            'noise_diagnostics':True,'automatic_metadata_and_utc':True,'ffmpeg':ffmpeg_executable(),'adv':'Requires separate real-observation smoke test'}

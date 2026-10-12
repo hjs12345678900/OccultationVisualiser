@@ -8,9 +8,9 @@ def order_stations(stations, mode='input'):
     """Validate terrestrial degrees and optionally sort latitude descending.
 
     Coordinates are signed geographic degrees: north/east positive. Both
-    latitude and longitude are required for north-to-south order; unknown
-    locations are never inferred from observer names or star coordinates.
-    Stable sorting preserves input order for equal latitudes.
+    Coordinates are optional; north-to-south order sorts known locations and
+    appends unknown locations in input order. Never infer locations from names.
+    A supplied location still requires a valid latitude/longitude pair.
     """
     if mode not in ('input', 'north_to_south'):
         raise ValueError('station_order must be input or north_to_south')
@@ -25,9 +25,7 @@ def order_stations(stations, mode='input'):
                 if not math.isfinite(value) or abs(value) > limit:
                     raise ValueError(f'{c["name"]}: invalid {key}')
                 c[key] = value
-        elif mode == 'north_to_south':
-            raise ValueError(f'{c["name"]}: coordinates required for north-to-south order')
-    return sorted(stations, key=lambda s: -s['config']['latitude_deg']) if mode == 'north_to_south' else stations
+    return sorted(stations, key=lambda s: (s['config'].get('latitude_deg') is None,-s['config'].get('latitude_deg',0))) if mode == 'north_to_south' else stations
 
 
 def merged_intervals(intervals):
@@ -46,6 +44,7 @@ def merged_intervals(intervals):
 def plan_timeline(cfg, stations):
     """Return UTC samples, per-sample presentation seconds and auditable cuts.
 
+    ``full`` uses saved-curve coverage with no event boundary requirement.
     ``dr`` keeps [D-padding, R+padding) for each station; every station must
     have saved/supplied D/R. ``manual`` uses explicit UTC limits. Skipping gaps
     merges D/R windows, or station curve-coverage intervals in manual mode;
@@ -76,6 +75,8 @@ def plan_timeline(cfg, stations):
                 raise ValueError(f'{station["config"]["name"]}: D/R required for event windows')
             windows.append((station['D'] - pad, station['R'] + pad))
         windows = merged_intervals(windows)
+    elif mode == 'full':
+        windows=merged_intervals([(s['rows'][0].utc,s['rows'][-1].utc+np.timedelta64(round(getattr(s['rows'][-1],'exposure_s',step)*1e9),'ns')) for s in stations])
     elif mode == 'manual':
         start, stop = (utc_ns(cfg[k]) for k in ('start_utc', 'end_utc'))
         if start >= stop:
@@ -84,7 +85,7 @@ def plan_timeline(cfg, stations):
         if skip:
             windows = merged_intervals([(max(start, s['rows'][0].utc), min(stop, s['rows'][-1].utc)) for s in stations])
     else:
-        raise ValueError('window_mode must be manual or dr')
+        raise ValueError('window_mode must be full, manual or dr')
     if not windows:
         raise ValueError('No station coverage inside the requested window')
     if not skip:

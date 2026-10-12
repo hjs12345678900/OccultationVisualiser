@@ -7,9 +7,12 @@ from .desktop_job import cancel_job
 class JobControls:
 
     def tr(self,key):
+        if hasattr(self,'i18n'):return self.i18n.text(key)
         return text(key,'zh' if self.ui_language.get()=='中文' else 'en')
 
     def change_language(self,event=None):
+        if hasattr(self,'i18n'):
+            self.i18n.refresh();return
         # Configure existing widgets: input values and running jobs survive.
         for widget,key in self.labels:widget.configure(text=self.tr(key))
         for combo,display,value,options in self.combos:
@@ -39,9 +42,9 @@ class JobControls:
             data=json.loads(result.read_text(encoding='utf-8'))
             self.set_status('done' if data['ok'] else 'failed')
             if data['ok'] and getattr(self,'verify_only',False):
-                self.status.set('核验完成（未生成动画） / Verification complete (no animation)')
+                self.set_status('verify_done')
             if data['ok'] and getattr(self,'quality_only',False):
-                self.status.set('噪声诊断完成 / Noise diagnostics complete');self.show_quality()
+                self.set_status('quality_done');self.show_quality()
         else:self.set_status('ended')
 
     def stop(self):

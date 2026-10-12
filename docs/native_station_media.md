@@ -18,12 +18,12 @@ Top-level fields: `event`, `target`, `date_utc` (first sample UTC date), `alignm
 
 | Presentation field | Meaning |
 | --- | --- |
-| `window_mode` | `manual` (legacy default) needs ISO `start_utc/end_utc`; `dr` needs saved/supplied D/R for every station |
+| `window_mode` | `full` (new GUI default) uses curve coverage without D/R; `manual` (legacy JSON default) needs ISO `start_utc/end_utc`; `dr` needs saved/supplied D/R |
 | `event_padding_s` | In `dr` mode, nonnegative seconds before D and after R; default 10 |
 | `skip_gaps` | Boolean, legacy default false. True merges D/R windows, or retains only the union of station curve coverage within manual limits. Individual missing images remain blank |
 | `playback_mode` | `real_time` (default) or `fixed_duration`; only presentation speed changes |
 | `video_duration_s` | Positive target seconds in fixed mode, at least 0.04; H.264 duration rounded to the nearest 40 ms, GIF to centiseconds |
-| `station_order` | `input` (legacy default) or `north_to_south`; the latter requires geographic latitude and longitude for every station |
+| `station_order` | `input` or `north_to_south`; the latter sorts supplied locations and appends unknown locations in input order |
 
 D/R windows are `[D-padding, R+padding)` and overlaps are merged. With gap skipping off, the continuous range covers the earliest D-padding to latest R+padding. With skipping on, both animation and shared plot axis omit the empty intervals. Double slashes mark plot-axis breaks; the UTC clock jumps to the next retained window. No station is shifted to align its event with another. The last hold in each window ends at its exact boundary before playback quantization. Legacy manual/no-gap runs retain their inclusive endpoint hold. `timeline_plan` records all intervals, removed gaps and per-frame presentation durations, and outputs record actual H.264 duration/frame count.
 
@@ -32,16 +32,17 @@ Each station supplies:
 | Field | Meaning |
 | --- | --- |
 | `name`, `curve`, `source` | Display label, saved photometry, and original ADV/SER/RAVF or timed FITS image/sequence |
-| `latitude_deg`, `longitude_deg` | Geographic degrees, north/east positive and south/west negative; both required together. Displayed as N/S and E/W; never star RA/Dec |
+| `latitude_deg`, `longitude_deg` | Optional geographic degrees, north/east positive and south/west negative; provide both or leave both absent. Displayed as N/S and E/W; never star RA/Dec |
 | `altitude_m`, `coordinate_source` | Optional elevation and coordinate provenance |
 | `coordinate_source_file`, `source_manifest` | Optional coordinate evidence and source selection manifest, both hashed with the inputs |
 | `reported_snr`, `snr_source_file` | Optional separately reported metric object and evidence file (hashed); preserved in metadata, never substituted for baseline SNR |
 | `curve_format` | `pymovie_csv`, `tangra_csv`, or `tangra_lc` |
 | `target_column` | Native net-count column such as `signal-target` or `signal-Altona`; no extra background subtraction |
-| `exposure_s` | Positive supplied exposure for CSV; LC uses its recorded exposure |
+| `exposure_s` | Positive CSV exposure in resolved JSON; GUI reads recorded metadata or explicit advanced override. LC retains its recorded durations |
+| `exposure_evidence` | GUI records exposure seconds, method and evidence path (hashed); cadence is never substituted for exposure |
 | `timestamp_reference` | CSV `start`, `midpoint`, or `end` |
 | `source_timestamp_reference` | Required for SER or FITS dates without DATE-AVG; ADV midpoint and RAVF start are intrinsic |
-| `source_first_frame` | Original curve frame ID at source index 0; required for ADV/SER/RAVF |
+| `source_first_frame` | `auto` (new default) matches recorded UTC; optional integer overrides original curve frame ID at source index 0 for ADV/SER/RAVF. Independent of displayed UTC crops |
 | `mapping_tolerance_s` | Explicit finite nonnegative source/curve residual tolerance, justified by export precision |
 | `source_minus_curve_s` | Optional known native-source minus already-corrected curve UTC; validates correction without applying it twice |
 | `ser_byte_order` | `header` (specification), `little`, or `big`; use a documented override for nonconforming writers |

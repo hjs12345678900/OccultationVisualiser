@@ -21,3 +21,5 @@
 - [v1.7.0 p001](v1.7.0/feature-list_v1.7.0_p001.md): FEAT-0020–0021.
 
 - [v1.8.0 p001](v1.8.0/feature-list_v1.8.0_p001.md): FEAT-0022–0023.
+
+- [v1.9.0 p001](v1.9.0/feature-list_v1.9.0_p001.md): FEAT-0024–0027.

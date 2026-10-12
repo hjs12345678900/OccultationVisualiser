@@ -37,8 +37,9 @@ def full_utc(date, value):
 def build_config(event, observers, quality_only=False):
     """Return JSON-safe configuration from shared fields and observer dicts.
 
-    Exposure inputs are milliseconds, offsets/tolerances seconds, coordinates
-    zero-based detector pixels. Missing paths or unsupported values fail before
+    Exposure is read from metadata unless explicitly overridden in milliseconds;
+    offsets/tolerances use seconds, detector coordinates zero-based pixels.
+    Missing paths or unsupported values fail before
     a job is started. No source timestamps or photometry are changed here.
     """
     if not observers: raise ValueError('Add an observer / 请添加观测者')
@@ -46,17 +47,17 @@ def build_config(event, observers, quality_only=False):
     if not event['event'].strip() or not event['target'].strip():
         raise ValueError('Enter event and target / 请填写事件及目标星')
     date = event['date_utc'].strip()
-    window={'D/R 周围':'dr','手动 UTC':'manual'}.get(event.get('window_mode'),event.get('window_mode','manual'))
+    window={'D/R 周围':'dr','手动 UTC':'manual','完整录制范围':'full'}.get(event.get('window_mode'),event.get('window_mode','manual'))
     playback={'真实时间':'real_time','指定时长':'fixed_duration'}.get(event.get('playback_mode'),event.get('playback_mode','real_time'))
     order={'北 → 南':'north_to_south','输入顺序':'input'}.get(event.get('station_order'),event.get('station_order','input'))
     skip=event.get('skip_gaps',False)
     if isinstance(skip,str):
-        if skip not in ('跳过','保留'): raise ValueError('Choose skip or keep gaps')
-        skip=skip=='跳过'
+        if skip not in ('跳过','保留','skip','keep'): raise ValueError('Choose skip or keep gaps')
+        skip=skip in ('跳过','skip')
     start, stop = ((full_utc(date,event[k]) for k in ('start_utc','end_utc')) if window=='manual' and not quality_only else ('',''))
     step = number(event,'step_s')
     import numpy as np
-    if window not in ('manual','dr') or playback not in ('real_time','fixed_duration'):
+    if window not in ('manual','dr','full') or playback not in ('real_time','fixed_duration'):
         raise ValueError('Choose window and playback mode')
     if step < .01 or (window=='manual' and not quality_only and utc_ns(stop)<=utc_ns(start)): raise ValueError('Check UTC window and display step')
     if window=='manual' and not skip and not quality_only:
@@ -73,7 +74,8 @@ def build_config(event, observers, quality_only=False):
         cfg['video_duration_s']=number(event,'video_duration_s')
         if cfg['video_duration_s']<.04: raise ValueError('Video duration must be >=0.04 seconds')
     for obs in observers:
-        station = dict(name=obs['name'].strip(),native_mode=obs.get('native_mode','raw'))
+        from .inspect_observer_metadata import resolve_exposure,resolve_native_mode
+        station = dict(name=obs['name'].strip(),native_mode=resolve_native_mode(obs))
         if not station['name']: raise ValueError('Observer name required / 请填写观测者姓名')
         for key in ('curve','source','pyote_result','tracking_csv','timing_source_file','adv_python','camera_settings_file'):
             if obs.get(key,'').strip():
@@ -85,9 +87,10 @@ def build_config(event, observers, quality_only=False):
         kind = 'tangra_lc' if Path(station['curve']).suffix.lower()=='.lc' else ('tangra_csv' if obs['mode']=='Tangra' else 'pymovie_csv')
         source_path=Path(station.get('source',station['curve']))
         suffix = source_path.suffix.lower()
-        station.update(curve_format=kind,exposure_s=number(obs,'exposure_ms')/1000,
+        exposure=resolve_exposure(obs)
+        station.update(curve_format=kind,exposure_s=exposure['exposure_s'],exposure_evidence=exposure,
                        target_column=obs.get('target_column','signal-target').strip(),
-                       source_first_frame=int(obs.get('source_first_frame','0')),
+                       source_first_frame=int(obs['source_first_frame']) if obs.get('source_first_frame') not in (None,'','auto') else 'auto',
                        timestamp_reference='midpoint' if kind.startswith('tangra') or suffix=='.adv' else 'start',
                        source_timestamp_reference='start',timing_policy=TIMING_NOTE,
                        mapping_tolerance_s=number(obs,'mapping_tolerance_s',.001),

@@ -1,8 +1,9 @@
 """Draw saved baseline counts on shared UTC without interpolation or shifting."""
 import numpy as np
+from .gui_localization import translate
 
 
-def draw_pair(canvas,pair):
+def draw_pair(canvas,pair,language='en'):
     """Plot B-normalized raw samples; never connect across rejected frame IDs.
 
     This interactive desktop preview is a descriptive count scatter plot.
@@ -10,7 +11,7 @@ def draw_pair(canvas,pair):
     """
     canvas.delete('all');w=max(canvas.winfo_width(),650);h=max(canvas.winfo_height(),180)
     if not pair.get('available'):
-        canvas.create_text(w/2,h/2,text='没有共同 UTC 基线 / No comparable UTC baseline',fill='#666');return
+        canvas.create_text(w/2,h/2,text=translate('quality_no_baseline',language),fill='#666');return
     start=np.datetime64(pair['start_utc']);stop=np.datetime64(pair['end_utc'])
     duration=float((stop-start)/np.timedelta64(1,'s'))
     profiles=pair['profiles'];values=[v for p in profiles for v in p['normalized_counts']]
@@ -28,5 +29,6 @@ def draw_pair(canvas,pair):
             canvas.create_oval(x-1.5,y-1.5,x+1.5,y+1.5,fill=color,outline='')
     canvas.create_text(left,bottom+16,text=pair['start_utc'].split('T')[1],anchor='w')
     canvas.create_text(right,bottom+16,text=pair['end_utc'].split('T')[1]+' UTC',anchor='e')
-    canvas.create_text(left,10,text='Raw counts / baseline mean',anchor='w')
-    canvas.create_text(right,10,text='  ·  '.join(pair['names']),anchor='e')
+    canvas.create_text(left,10,text=translate('quality_plot',language),anchor='w')
+    for offset,name,color in zip((0,150),pair['names'],('#2875b8','#d65b28')):
+        canvas.create_text(right-offset,10,text=name,anchor='e',fill=color)

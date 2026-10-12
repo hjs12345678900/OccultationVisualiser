@@ -11,6 +11,7 @@ class GuiConfigTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);curve=root/'curve.csv';source=root/'source.ser'
             curve.touch();source.touch()
+            source.with_suffix('.CameraSettings.txt').write_text('Exposure=200ms\n')
             event=dict(event='Asteroid',target='Star',date_utc='2026-09-12',start_utc='',end_utc='',
                        step_s='.1',language='both',output_root=tmp,window_mode='D/R 周围',event_padding_s='10',
                        skip_gaps='跳过',playback_mode='指定时长',video_duration_s='30',station_order='北 → 南')
@@ -27,6 +28,7 @@ class GuiConfigTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);curve=root/'curve.csv';source=root/'source.ser'
             curve.touch();source.touch()
+            source.with_suffix('.CameraSettings.txt').write_text('Exposure=200ms\n')
             event=dict(event='Asteroid',target='Star',date_utc='2026-09-12',start_utc='23:59:59',
                        end_utc='2026-09-13T00:00:01',step_s='.2',language='both',output_root=tmp)
             a={**DEFAULTS,'name':'A','curve':str(curve),'source':str(source),'exposure_ms':'200','predicted_utc':'23:59:59.5'}

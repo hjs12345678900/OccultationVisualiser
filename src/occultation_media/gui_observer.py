@@ -1,103 +1,121 @@
-"""Observer editor with native file selection and drag-and-drop targets."""
+"""Edit station files and optional overrides without changing observation data."""
 from pathlib import Path
+import csv
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
-
-
-def path_entry(parent, variable, row, label, directory=False):
-    """Attach a path entry accepting one native dropped path, including spaces."""
-    ttk.Label(parent,text=label).grid(row=row,column=0,sticky='w',pady=3)
-    entry=ttk.Entry(parent,textvariable=variable,width=48)
-    entry.grid(row=row,column=1,sticky='ew',pady=3)
-    def choose(folder=directory):
-        value=filedialog.askdirectory(parent=parent) if folder else filedialog.askopenfilename(parent=parent)
-        if value: variable.set(value)
-    ttk.Button(parent,text='选择 Browse',command=choose).grid(row=row,column=2,padx=4)
-    if label.startswith('影像'):
-        ttk.Button(parent,text='FITS 文件夹',command=lambda:choose(True)).grid(row=row,column=3)
-    if hasattr(entry,'drop_target_register'):
-        entry.drop_target_register('DND_Files')
-        def drop(event):
-            paths=parent.tk.splitlist(event.data)
-            if len(paths)==1: variable.set(paths[0])
-            else: messagebox.showerror('选择一个文件', 'Drop one file or one FITS folder at a time.',parent=parent)
-        entry.dnd_bind('<<Drop>>',drop)
-    return entry
-
+from tkinter import ttk,messagebox
+from .gui_path_entry import path_entry
+from .gui_localization import Localizer
+from .inspect_observer_metadata import inspect_exposure,resolve_native_mode
 
 DEFAULTS=dict(name='Observer',mode='PyMovie / PyOTE',curve='',source='',pyote_result='',
-              tracking_csv='',exposure_ms='',target_column='signal-target',source_first_frame='0',
-              predicted_utc='',native_mode='raw',mapping_tolerance_s='0.001',source_minus_curve_s='0',
+              tracking_csv='',exposure_ms='',exposure_mode='auto',target_column='signal-target',source_first_frame='',
+              predicted_utc='',native_mode='auto',mapping_tolerance_s='0.001',source_minus_curve_s='0',
               ser_byte_order='header',D_utc='',R_utc='',target_xy='',fits_hdu='',timing_source_file='',adv_python='',
               latitude_deg='',longitude_deg='',altitude_m='',camera_settings_file='')
 
 
 class ObserverDialog:
-    """Edit a copy; cancelling never changes the saved observer."""
-    def __init__(self,root,values,on_save):
-        self.window=tk.Toplevel(root);self.window.title('编辑 Observer')
-        self.window.transient(root);self.window.grab_set()
+    """Separate required files, automatically read metadata, and optional settings."""
+    def __init__(self,root,values,on_save,language=None):
+        self.window=tk.Toplevel(root);self.window.transient(root);self.window.grab_set()
+        self.language=language if language is not None else tk.StringVar(value='中文')
+        self.ui=Localizer(self.window,self.language);self.on_save=on_save
         self.values={k:tk.StringVar(value=str(values.get(k,v))) for k,v in DEFAULTS.items()}
-        self.on_save=on_save
-        book=ttk.Notebook(self.window);book.pack(fill='both',expand=True,padx=12,pady=12)
-        main=ttk.Frame(book,padding=12);advanced=ttk.Frame(book,padding=12)
-        book.add(main,text='文件与观测 Files');book.add(advanced,text='高级 Advanced')
-        for panel in (main,advanced): panel.columnconfigure(1,weight=1)
-        self.field(main,0,'name','观测者 Observer')
-        self.field(main,1,'mode','测光来源',('Tangra','PyMovie / PyOTE'))
-        for row,key,label in [(2,'curve','光变曲线 CSV / Tangra LC'),(3,'source','影像 ADV / SER / FITS / RAVF / LC'),
-                              (4,'pyote_result','PyOTE 结果 JSON（可选）'),(5,'tracking_csv','原始跟踪 CSV（可选）')]:
-            path_entry(main,self.values[key],row,label)
-        self.field(main,6,'target_column','PyMovie 目标列 Target column')
-        self.field(main,7,'exposure_ms','曝光 Exposure (ms)')
-        self.field(main,8,'source_first_frame','源第 0 帧对应帧号 First frame ID')
-        self.field(main,9,'predicted_utc','Expected UTC（可选，每站独立）')
-        self.field(main,10,'native_mode','PyOTE mode',('raw','C3','C4'))
-        self.field(main,11,'latitude_deg','纬度 Latitude (°，北正 / 南负)')
-        self.field(main,12,'longitude_deg','经度 Longitude (°，东正 / 西负)')
-        self.field(main,13,'altitude_m','海拔 Altitude (m，可选)')
-        self.note=ttk.Label(main,wraplength=630);self.note.grid(row=14,column=0,columnspan=4,sticky='w',pady=8)
-        for row,(key,label) in enumerate([('mapping_tolerance_s','UTC 核验容差 (s)'),('source_minus_curve_s','已知源减曲线时差 (s)'),
-                  ('D_utc','报告 D UTC（可选）'),('R_utc','报告 R UTC（可选）'),('target_xy','目标 X Y（从 0 起，可选）'),('fits_hdu','FITS HDU（可选）')]):
-            self.field(advanced,row,key,label)
-        self.field(advanced,6,'ser_byte_order','SER 字节序',('header','little','big'))
-        path_entry(advanced,self.values['timing_source_file'],7,'定时来源报告（可选）')
-        path_entry(advanced,self.values['adv_python'],8,'ADV 解码 Python（可选）')
-        path_entry(advanced,self.values['camera_settings_file'],9,'CameraSettings（可选）')
-        ttk.Label(advanced,text='容差用于导出舍入精度；请勿用它掩盖未知时间偏移。',wraplength=600).grid(row=10,column=0,columnspan=4,pady=8)
-        buttons=ttk.Frame(self.window);buttons.pack(fill='x',padx=12,pady=10)
-        ttk.Button(buttons,text='取消 Cancel',command=self.window.destroy).pack(side='right')
-        ttk.Button(buttons,text='保存 Observer',command=self.save).pack(side='right',padx=8)
-        self.values['mode'].trace_add('write',self.mode_changed);self.mode_changed()
-        self.values['curve'].trace_add('write',self.inspect_curve)
+        self.metadata=None;self.metadata_error=None;self.pending=None;self.widgets={}
+        self.window.geometry('980x760');self.window.minsize(870,700)
+        self.book=ttk.Notebook(self.window);self.book.pack(fill='both',expand=True,padx=12,pady=12)
+        main=ttk.Frame(self.book,padding=12);location=ttk.Frame(self.book,padding=12);advanced=ttk.Frame(self.book,padding=12)
+        self.panels=[main,location,advanced]
+        for panel,key in zip(self.panels,('files_tab','location_tab','advanced_tab')):
+            self.book.add(panel,text=self.ui.text(key));panel.columnconfigure(1,weight=1)
+        self.field(main,0,'name','station_name')
+        self.field(main,1,'mode','curve_kind',[('Tangra','Tangra'),('PyMovie / PyOTE','PyMovie / PyOTE')],literal=True)
+        for row,key,label in [(2,'curve','curve_input'),(3,'source','source_input'),(4,'pyote_result','pyote_input'),(5,'tracking_csv','tracking_input')]:
+            path_entry(main,self.values[key],row,label,ui=self.ui,source=key=='source')
+        self.field(main,6,'target_column','target_column')
+        self.ui.label(main,'auto_exposure').grid(row=7,column=0,sticky='w',pady=6)
+        self.exposure_info=ttk.Label(main,wraplength=540);self.exposure_info.grid(row=7,column=1,columnspan=3,sticky='w')
+        self.ui.label(main,'data_mode').grid(row=8,column=0,sticky='w',pady=6)
+        self.mode_info=ttk.Label(main,wraplength=540);self.mode_info.grid(row=8,column=1,columnspan=3,sticky='w')
+        self.ui.label(main,'file_help',wraplength=875).grid(row=9,column=0,columnspan=4,sticky='w',pady=10)
+        self.ui.label(main,'mode_help',wraplength=875).grid(row=10,column=0,columnspan=4,sticky='w',pady=6)
+        for row,key,label in [(0,'latitude_deg','latitude'),(1,'longitude_deg','longitude'),(2,'altitude_m','altitude'),(3,'predicted_utc','prediction')]:self.field(location,row,key,label)
+        self.ui.label(location,'location_help',wraplength=875).grid(row=4,column=0,columnspan=4,sticky='w',pady=12)
+        choices=[('auto','auto'),('manual','manual_override')]
+        self.field(advanced,0,'exposure_mode','exposure_mode',choices)
+        self.field(advanced,1,'exposure_ms','exposure_override')
+        self.field(advanced,2,'native_mode','data_mode',[(v,'mode_'+v.lower()) for v in ('auto','raw','C3','C4')])
+        self.field(advanced,3,'source_first_frame','frame_override')
+        self.ui.label(advanced,'frame_help',wraplength=875).grid(row=4,column=0,columnspan=4,sticky='w',pady=6)
+        for row,key,label in [(5,'D_utc','d_utc'),(6,'R_utc','r_utc'),(7,'mapping_tolerance_s','tolerance'),(8,'source_minus_curve_s','clock_offset'),(9,'target_xy','target_xy'),(10,'fits_hdu','fits_hdu')]:self.field(advanced,row,key,label)
+        self.field(advanced,11,'ser_byte_order','byte_order',[(k,k) for k in ('header','little','big')])
+        for row,key,label in [(12,'timing_source_file','timing_report'),(13,'adv_python','adv_python'),(14,'camera_settings_file','camera_settings')]:path_entry(advanced,self.values[key],row,label,ui=self.ui)
+        self.ui.label(advanced,'advanced_help',wraplength=875).grid(row=15,column=0,columnspan=4,sticky='w',pady=6)
+        buttons=ttk.Frame(self.window);buttons.pack(fill='x',padx=12,pady=8)
+        self.ui.button(buttons,'cancel',command=self.window.destroy).pack(side='right')
+        self.ui.button(buttons,'save_station',command=self.save).pack(side='right',padx=8)
+        for key in ('curve','source','pyote_result','fits_hdu','camera_settings_file','adv_python'):self.values[key].trace_add('write',self.schedule_inspection)
+        for key in ('native_mode','exposure_mode','exposure_ms'):self.values[key].trace_add('write',self.refresh_metadata)
+        self.ui.callbacks.append(self.translate_dynamic)
+        self.window.bind('<Destroy>',self.destroy,add='+')
+        self.translate_dynamic();self.schedule_inspection()
 
-    def field(self,parent,row,key,label,choices=None):
-        ttk.Label(parent,text=label).grid(row=row,column=0,sticky='w',pady=4)
-        widget=ttk.Combobox(parent,textvariable=self.values[key],values=choices,state='readonly') if choices else ttk.Entry(parent,textvariable=self.values[key])
-        widget.grid(row=row,column=1,sticky='ew',pady=4)
+    def field(self,parent,row,key,label,choices=None,literal=False):
+        self.ui.label(parent,label).grid(row=row,column=0,sticky='w',pady=3)
+        if literal:
+            widget=ttk.Combobox(parent,textvariable=self.values[key],values=[v for v,_ in choices],state='readonly')
+        elif choices:widget=self.ui.combo(parent,self.values[key],choices,width=40)
+        else:widget=ttk.Entry(parent,textvariable=self.values[key])
+        widget.grid(row=row,column=1,sticky='ew',pady=3);self.widgets[key]=widget
 
-    def mode_changed(self,*_):
-        tangra=self.values['mode'].get()=='Tangra'
-        self.note.config(text=('Tangra：选择导出 CSV 或 LC；CSV 使用导出的曝光中点 UTC。LC 影像仅含目标小图。' if tangra else
-            'PyMovie：选择原始 CSV；PyOTE 结果为可选，不重新拟合。时标跟随影像源。')+'\n可拖入文件；SER / DATE-OBS 按 SharpCap 曝光开始处理，显示时加半曝光。')
+    def schedule_inspection(self,*_):
+        if self.pending:self.window.after_cancel(self.pending)
+        self.pending=self.window.after(250,self.inspect_files)
 
-    def inspect_curve(self,*_):
-        """Suggest native signal column and first frame without changing a source mapping."""
+    def inspect_files(self):
+        """Inspect metadata only after a complete file selection/drop."""
+        self.pending=None;values={k:v.get().strip() for k,v in self.values.items()}
+        curve=Path(values['curve'])
         try:
-            import csv
-            path=Path(self.values['curve'].get())
-            if path.suffix.lower()!='.csv': return
-            with path.open(encoding='utf-8-sig') as stream:
-                for line in stream:
-                    if line.startswith('FrameNum,'):
-                        columns=next(csv.reader([line]))
-                        signal=next((c for c in columns if c.startswith('signal-')),None)
-                        if signal: self.values['target_column'].set(signal)
-                        break
-        except (OSError,UnicodeError): pass
+            if curve.is_file():
+                if curve.suffix.lower()=='.lc':self.values['mode'].set('Tangra')
+                elif curve.suffix.lower()=='.csv':
+                    with curve.open(encoding='utf-8-sig') as stream:
+                        for line in stream:
+                            if line.startswith('Tangra '):self.values['mode'].set('Tangra')
+                            if line.startswith('FrameNum,'):
+                                self.values['mode'].set('PyMovie / PyOTE');columns=next(csv.reader([line]))
+                                if values['target_column'] not in columns:
+                                    self.values['target_column'].set(next((c for c in columns if c.startswith('signal-')),'signal-target'))
+                                break
+                            if line.startswith('FrameNo,'):break
+            self.metadata=inspect_exposure(values) if values['curve'] or values['source'] else None
+            self.metadata_error=None
+        except Exception as exc:self.metadata=None;self.metadata_error=str(exc)
+        self.refresh_metadata()
+
+    def refresh_metadata(self,*_):
+        if self.metadata:self.exposure_info.configure(text=f"{self.metadata['exposure_s']*1000:.6g} ms · {Path(self.metadata['path']).name}")
+        else:self.exposure_info.configure(text=self.metadata_error or self.ui.text('metadata_missing' if self.values['curve'].get() else 'metadata_pending'))
+        if self.values['exposure_mode'].get()=='manual':
+            override=self.ui.text('manual_override')+': '+self.values['exposure_ms'].get()+' ms'
+            self.exposure_info.configure(text=(self.exposure_info.cget('text')+' · '+override) if self.metadata else override)
+        try:
+            mode=resolve_native_mode({k:v.get() for k,v in self.values.items()})
+            self.mode_info.configure(text=self.ui.text('mode_'+mode.lower()))
+        except Exception as exc:self.mode_info.configure(text=str(exc))
+        self.widgets['exposure_ms'].configure(state='normal' if self.values['exposure_mode'].get()=='manual' else 'disabled')
+
+    def translate_dynamic(self):
+        self.window.title(self.ui.text('station_editor'))
+        for panel,key in zip(self.panels,('files_tab','location_tab','advanced_tab')):self.book.tab(panel,text=self.ui.text(key))
+        self.refresh_metadata()
+
+    def destroy(self,event):
+        if event.widget is self.window and self.pending:self.window.after_cancel(self.pending);self.pending=None
 
     def save(self):
         values={k:v.get().strip() for k,v in self.values.items()}
         if not values['name']:
-            messagebox.showerror('Observer','请输入观测者姓名 / Enter a name',parent=self.window);return
+            messagebox.showerror(self.ui.text('station'),self.ui.text('station_name'),parent=self.window);return
         self.on_save(values);self.window.destroy()

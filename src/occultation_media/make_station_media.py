@@ -64,6 +64,7 @@ def make_station_media(config_path, output_dir=None, verify_only=False):
             station['snr'] = station_snr(c, rows, station['D'], station['R'])
             paths += curve_paths+frames.paths
             paths += [c[k] for k in ('pyote_result','tracking_csv','timing_source_file','coordinate_source_file','source_manifest','snr_source_file') if c.get(k)]
+            if c.get('exposure_evidence',{}).get('path'):paths.append(c['exposure_evidence']['path'])
             residuals = [record['residual_s'] for record in frames.records.values()]
             coverage.append(dict(name=c['name'], samples=len(rows), matched_images=len(frames.mapping),
                 curve_start_utc=str(rows[0].utc), curve_end_utc=str(rows[-1].utc),

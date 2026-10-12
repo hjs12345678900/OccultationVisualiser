@@ -25,7 +25,8 @@ class StationFrames:
 
     source_minus_curve_s verifies an already-applied CSV clock correction;
     it is never added to the curve a second time. Non-FITS sources require
-    frame identity and UTC agreement. Partial FITS maps by actual header UTC.
+    one-to-one UTC agreement in automatic mode, or explicit frame identity and
+    UTC agreement when an offset is supplied. Partial FITS maps by header UTC.
     A finite nonnegative tolerance is mandatory and every residual is recorded.
     """
     def __init__(self, cfg, rows, native_times=None):
@@ -42,7 +43,8 @@ class StationFrames:
         if not np.isfinite([tolerance, offset_s]).all() or tolerance < 0:
             raise ValueError('Timing tolerance and saved clock correction must be finite')
         offset = np.timedelta64(round(offset_s*1e9), 'ns')
-        indices = list(range(self.reader.count)) if kind == 'FITS' else [r.frame-cfg['source_first_frame'] for r in rows]
+        automatic=kind=='FITS' or cfg.get('source_first_frame','auto')=='auto'
+        indices = list(range(self.reader.count)) if automatic else [r.frame-cfg['source_first_frame'] for r in rows]
         if any(i<0 or i>=self.reader.count for i in indices): raise ValueError('Source frame mapping out of range')
         timing = source_timing(self.reader, cfg, indices)
         times = np.array([timing[i][0] for i in indices])
@@ -50,18 +52,19 @@ class StationFrames:
         used = set()
         for i, row in enumerate(rows):
             expected = row.utc+offset
-            if kind == 'FITS':
+            if automatic:
                 source_index = int(np.argmin(abs(times-expected)))
             else: source_index = indices[i]
             time, record = timing[source_index]
             residual = float((time-expected)/np.timedelta64(1,'s'))
             if abs(residual) > tolerance:
-                if kind == 'FITS': continue
+                if automatic and (kind=='FITS' or expected<times[0] or expected>times[-1]): continue
                 raise ValueError(f'{cfg["name"]}: UTC mismatch at frame {row.frame}: {residual:g} s')
             if source_index in used: raise ValueError('Two curve samples map to the same source image')
             used.add(source_index)
             self.mapping[i] = source_index
             self.records[i] = dict(frame=row.frame, source_index=source_index,
+                mapping_method='absolute_utc_auto' if automatic else 'explicit_frame_offset',
                 source_midpoint_utc=str(time), curve_midpoint_utc=str(row.utc),
                 applied_source_minus_curve_s=offset_s, residual_s=residual, native=record)
 

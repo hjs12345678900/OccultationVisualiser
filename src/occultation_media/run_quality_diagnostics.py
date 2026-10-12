@@ -49,6 +49,7 @@ def run_quality_diagnostics(config_path, output_dir=None):
         for c in cfg['stations']:
             rows,_,_,files=read_station_curve(c,cfg['date_utc']);paths+=files
             paths += [c[k] for k in ('pyote_result','tracking_csv','timing_source_file','snr_source_file','coordinate_source_file') if c.get(k)]
+            if c.get('exposure_evidence',{}).get('path'):paths.append(c['exposure_evidence']['path'])
             d,r,timing=saved_transitions(c,rows)
             stations.append(dict(config=c,rows=rows,D=d,R=r,timing=timing,snr=station_snr(c,rows,d,r)))
         stations=order_stations(stations,cfg.get('station_order','input'))

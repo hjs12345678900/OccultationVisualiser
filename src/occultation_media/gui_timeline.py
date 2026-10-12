@@ -1,34 +1,33 @@
-"""Expose event-window, gap, playback and geographic ordering controls."""
+"""Expose independent recording crops, playback, gap and location preferences."""
 import tkinter as tk
 from tkinter import ttk
 
-DEFAULTS = dict(window_mode='D/R 周围', event_padding_s='10', skip_gaps='跳过',
-                playback_mode='真实时间', video_duration_s='60', station_order='北 → 南')
+DEFAULTS=dict(window_mode='full',event_padding_s='10',skip_gaps='skip',
+              playback_mode='real_time',video_duration_s='20',station_order='input',start_utc='',end_utc='')
 
 
-def timeline_controls(parent, fields):
-    """Add editable presentation settings; all saved values are GUI strings."""
-    panel=ttk.LabelFrame(parent,text='视频设置 · Timeline / Playback',padding=8)
-    panel.pack(fill='x',pady=5)
-    choices=dict(window_mode=('D/R 周围','手动 UTC'),skip_gaps=('跳过','保留'),
-                 playback_mode=('真实时间','指定时长'),station_order=('北 → 南','输入顺序'))
-    labels=dict(window_mode='时间范围 / Window',event_padding_s='D/R 前后各 (s)',
-                skip_gaps='站间空档 / Gaps',playback_mode='播放速度 / Playback',
-                video_duration_s='视频总时长 / Duration (s)',station_order='站点排序 / Order')
-    widgets={}
-    for i,(key,default) in enumerate(DEFAULTS.items()):
-        row,col=divmod(i,2);fields[key]=tk.StringVar(value=default)
-        ttk.Label(panel,text=labels[key]).grid(row=row,column=col*2,sticky='w',padx=4,pady=4)
-        widget=(ttk.Combobox(panel,textvariable=fields[key],values=choices[key],state='readonly')
-                if key in choices else ttk.Entry(panel,textvariable=fields[key]))
-        widget.grid(row=row,column=col*2+1,sticky='ew',padx=4)
-        widgets[key]=widget
-    for col in (1,3): panel.columnconfigure(col,weight=1)
+def timeline_controls(parent,fields,ui):
+    """Enable start/end only for custom UTC; D/R padding is conditional."""
+    panel=ui.bind(ttk.LabelFrame(parent,padding=8),'timeline_title');panel.pack(fill='x',pady=5)
+    choices=dict(window_mode=[('full','window_full'),('dr','window_dr'),('manual','window_manual')],
+                 skip_gaps=[('skip','skip'),('keep','keep')],playback_mode=[('real_time','real_time'),('fixed_duration','fixed_duration')],
+                 station_order=[('input','input_order'),('north_to_south','north_south')])
+    keys=['window_mode','event_padding_s','start_utc','end_utc','skip_gaps','playback_mode','video_duration_s','station_order']
+    labels=['window','padding','start','end','gaps','playback','duration','order'];widgets={}
+    for i,(key,label) in enumerate(zip(keys,labels)):
+        row,col=divmod(i,2);fields[key]=tk.StringVar(value=DEFAULTS[key])
+        ui.label(panel,label).grid(row=row,column=col*2,sticky='w',padx=4,pady=3)
+        widget=ui.combo(panel,fields[key],choices[key],width=27) if key in choices else ttk.Entry(panel,textvariable=fields[key])
+        widget.grid(row=row,column=col*2+1,sticky='ew',padx=4);widgets[key]=widget
+    for col in (1,3):panel.columnconfigure(col,weight=1)
+    help_label=ttk.Label(panel,wraplength=1000);help_label.grid(row=4,column=0,columnspan=4,sticky='w',pady=4)
     def changed(*_):
-        widgets['video_duration_s'].config(state='normal' if fields['playback_mode'].get()=='指定时长' else 'disabled')
-        widgets['event_padding_s'].config(state='normal' if fields['window_mode'].get()=='D/R 周围' else 'disabled')
-    fields['playback_mode'].trace_add('write',changed)
-    fields['window_mode'].trace_add('write',changed)
-    changed()
-    ttk.Label(panel,text='D/R 周围需每站的 PyOTE 结果或 D/R；北→南需纬度、经度。空档跳过不修改 UTC。',wraplength=1030).grid(row=3,column=0,columnspan=4,sticky='w',pady=3)
-    return panel
+        mode=fields['window_mode'].get()
+        for key in ('start_utc','end_utc'):widgets[key].configure(state='normal' if mode=='manual' else 'disabled')
+        widgets['event_padding_s'].configure(state='normal' if mode=='dr' else 'disabled')
+        widgets['video_duration_s'].configure(state='normal' if fields['playback_mode'].get()=='fixed_duration' else 'disabled')
+        help_label.configure(text=ui.text('window_'+mode+'_help'))
+    for key in ('window_mode','playback_mode'):fields[key].trace_add('write',changed)
+    ui.callbacks.append(changed);changed()
+    ui.label(panel,'timeline_help',wraplength=1000).grid(row=5,column=0,columnspan=4,sticky='w')
+    return widgets

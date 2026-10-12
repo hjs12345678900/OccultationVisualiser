@@ -6,27 +6,34 @@ Turn an occultation observation into a synchronized star-field and light-curve a
 
 Previously **OccultationMedia**. New builds use `OccultationVisualiser.app` / `OccultationVisualiser.exe` and the `occultationvisualiser` command. The Python import `occultation_media` and old `occultation-media` commands remain compatible. The GitHub repository is now OccultationVisualiser; existing local checkouts may retain the old folder name.
 
-## GUI quick start (v1.8)
+## GUI quick start (v1.9)
 
-All inputs are available in the desktop window; writing JSON is not required.
+Use the prominent **中文 / English** picker at the top right for the interface. Export language is independent; switching the interface retains every input and running job.
 
-1. Fill in the shared **event, target star, UTC date, display step** and output language. Choose **D/R windows** (10 seconds before D and after R by default) or **manual UTC**. Only manual mode requires start/end UTC; use a full date-time across midnight.
-2. Choose or drop an output folder. **Add**, **Edit** (or double-click), and **Delete** manage 1–8 observers sharing absolute UTC.
-3. In each observer editor, switch **Tangra / PyMovie–PyOTE**, then browse or drop the curve, image source and optional PyOTE result. Use the FITS-folder button or drop a whole sequence folder. Each file box accepts one file/folder at a time.
-4. Set the observer name, exposure in milliseconds, original frame ID at source index 0, optional **Expected UTC**, and geographic latitude/longitude (north/east positive). **North → south** sorts by latitude and shows coordinates; altitude is optional. Verify the suggested PyMovie signal column if several targets exist.
-5. **Advanced** contains supplied D/R, target coordinates, FITS HDU, SER byte order, known camera offset and UTC tolerance. There is no start/middle/end selector.
-6. **Verify** checks inputs and native timestamps without encoding. **Generate** creates GIF, MP4 and PNG; use **Open output** to inspect media and timestamp audit records.
-7. **Save / Open** retains shared event information and all observers as a GUI project. No JSON editing is needed. Each run separately saves its resolved configuration for reproducibility.
+1. Enter asteroid, target star and the UTC date, then choose an output folder. Fields marked * are required.
+2. Add a station and choose its CSV/LC curve plus the original images for an animation. The editor detects the curve format, suggests its target column and reads recorded exposure. PyOTE result JSON is optional.
+3. **Full recording coverage** is the default; it needs neither typed start/end times nor D/R. **D/R event windows** use supplied/saved disappearance and reappearance with configurable padding. **Custom start/end UTC** crops the displayed video, e.g. 09:54:20 to 09:54:45; use a full date across midnight. It does not set source frame numbering or change measured D/R.
+4. Location and prediction have an optional tab. Leave coordinates blank for one or several stations. North-to-south order sorts known locations and appends unknown ones; it does not invent positions.
+5. Choose skip/keep gaps and real event speed or a fixed video duration. Skipping gaps retains the absolute UTC clock and explicit axis breaks; fixed duration changes playback only.
+6. **Verify timestamps** audits original frame times. **Generate** exports GIF, MP4 and PNG. **Noise diagnostics** creates curve-only JSON/CSV reports and a selectable shared-UTC station-pair plot; D/R is needed to identify a baseline, but missing D/R simply leaves that statistic unavailable.
+7. Save/Open retains the project. View diagnostics reopens a `quality_report.json`. Each run saves resolved settings, input hashes and executing-code provenance.
 
-Choose **skip / keep gaps** and **real time / fixed duration** in the video settings. D/R windows require saved PyOTE results or supplied boundaries for every observer. Skipped gaps have `//` plot-axis marks and an absolute UTC clock jump. Source clocks and D/R remain unchanged; missing images inside retained windows stay blank. Fixed duration changes playback speed only; H.264 uses 25 fps (nearest 40 ms total duration), GIF uses centiseconds. Old GUI projects open in manual/input-order mode.
+| Input | When needed |
+| --- | --- |
+| Image source | Animation/verification; optional for curve-only diagnostics |
+| Coordinates, altitude, prediction | Optional labels/order; unrelated to UTC verification |
+| PyOTE results or both supplied D/R | D/R crops and identified baseline statistics; optional for full recording media |
+| Exposure | Automatically read from FITS/ADV/RAVF/LC, PyMovie shutter headers or CameraSettings; Advanced override only if absent or explicitly needed |
+| Frame-ID offset | Optional Advanced override for cropped recordings; default matches source UTC |
+| Tracking CSV | Optional if an imported normalized curve lacks original target positions |
 
-Station headers automatically show baseline per-exposure SNR (`B / sigmaB`). Saved PyOTE baseline parameters are preferred; otherwise calculate directly from valid saved exposures wholly outside supplied D/R. Tangra LC values are labelled `(LC baseline)`; other fallback curves are labelled as estimated. The statistic uses the full saved curve and is independent of video cuts. See [SNR definitions and provenance](docs/native_station_media.md#baseline-snr-labels).
+**Exposure and cadence are different.** SER UTC trailers record cadence, not exposure; the app reads capture settings instead. Historical projects retain their explicit exposure and frame overrides, visibly identified in the editor. Missing exposure records produce a clear message; they are not replaced by cadence.
 
-**Noise diagnostics** opens a station table, capture/photometry details and a selectable station-pair scatter plot on shared UTC. This action needs curves and exposure conventions, with saved or supplied D/R to identify baselines; image sources and manual media start/end times are optional. **View report** reopens an existing `quality_report.json`. Saved-fit SNR and the separately calculated guarded baseline SNR are labelled separately. The diagnostic guard defaults to one second on either side of D/R, independent of video padding. Pair comparisons exclude both events and retain whole exposures within shared recording coverage; recordings without overlap are explicitly unavailable.
+**Curve type** describes imported data. `raw` is original target counts. In our reduction workflow, `C3/C4` identify the reference star used for an already-exported normalized curve, not different fitting algorithms. Auto reads the result's mode, otherwise uses raw. Select the matching analysis CSV and result for C3/C4; no normalization or fitting happens in this app.
 
-Camera/binning/gain metadata come from saved headers and nearby `CameraSettings.txt`, or a file selected in Advanced. Linear residual and adjacent-difference scatter are diagnostic statistics; they do not replace original counts or saved SNR. PyMovie spatial-background noise permits an approximate `sigma_pixel*sqrt(N_mask)` budget, assuming independent representative pixels. It is not isolated read noise and omits source shot noise and background-estimator uncertainty. C3/C4 count scaling disables the raw-pixel budget. Full definitions, selected frames and source hashes are saved with JSON/CSV; normal Generate/Verify also includes the report.
+Station headers show saved per-exposure baseline SNR (`B / sigmaB`), or direct whole-exposure baseline statistics when native parameters are absent. Diagnostics displays saved SNR separately from a guarded baseline (default: exclude D−1 s through R+1 s, independent of video padding). Comparisons retain shared absolute UTC and exclude both events; recordings without overlap are unavailable. Linear residual and adjacent-difference scatter are separate diagnostics, not replacement curves/SNR. The PyMovie spatial-background budget `sigma_pixel*sqrt(N_mask)` assumes independent representative pixels; it does not isolate read noise and omits source shot noise/background-estimator uncertainty. Raw-pixel budgets are disabled for C3/C4. See [definitions and configuration](docs/native_station_media.md).
 
-CLI: `occultationvisualiser --media-config project.json --quality-only`. Optional JSON `diagnostic_margin_s` adjusts the baseline guard; this mode does not audit source-image timestamps. Use Verify for that audit.
+CLI: `occultationvisualiser --media-config project.json --quality-only`. Optional `diagnostic_margin_s` changes the baseline guard. Curve-only diagnostics does not verify source-image timestamps; use Verify for that audit.
 
 ### Timestamp policy
 

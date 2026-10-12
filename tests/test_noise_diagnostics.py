@@ -72,7 +72,7 @@ class NoiseDiagnosticsTests(unittest.TestCase):
     def test_curve_only_cli_and_gui_need_no_images_or_manual_window(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);curve=root/'native.csv'
-            curve.write_text('FrameNum,timeInfo,signal-target\n'+'\n'.join(f'{r.frame},[{str(r.utc).split("T")[1]}],{r.counts}' for r in self.rows))
+            curve.write_text('#INSTRUMENT-SHUTTER: 400000000\nFrameNum,timeInfo,signal-target\n'+'\n'.join(f'{r.frame},[{str(r.utc).split("T")[1]}],{r.counts}' for r in self.rows))
             obs=dict(DEFAULTS,curve=str(curve),exposure_ms='400',D_utc='09:54:04',R_utc='09:54:06')
             cfg=build_config(dict(event='Test',target='Star',date_utc='2026-09-12',step_s='0.1',language='both',output_root=str(root),start_utc='',end_utc=''),[obs],quality_only=True)
             self.assertNotIn('source',cfg['stations'][0])

@@ -1,3 +1,11 @@
+# 1.9.0
+
+- Add an obvious top-right Chinese/English interface picker, live translations of the event/editor/diagnostics windows and stable saved values independent of caption language.
+- Separate required inputs from optional location/prediction/advanced overrides. Coordinates are optional; north-to-south sorting appends unknown locations without inventing positions.
+- Replace ambiguous manual-UTC wording with contextual crop help; default new projects to complete recording coverage without D/R or typed start/end times.
+- Read exposure from recorded FITS/ADV/RAVF/LC metadata, PyMovie shutter headers or CameraSettings. Never use cadence as exposure; preserve explicit overrides in historical projects.
+- Match source frames by native UTC automatically; retain optional advanced frame-ID overrides. Explain raw/C3/C4 as imported curve types, and read the saved result mode automatically.
+
 # 1.8.0
 
 - Add desktop Noise diagnostics and View report actions, with curve-only runs and immutable JSON/CSV output.

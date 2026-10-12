@@ -1,14 +1,16 @@
-"""Complete event and observer workspace; JSON is an optional saved project."""
-from datetime import datetime, timezone
+"""Event/project actions, independent of localized widget construction."""
+from datetime import datetime,timezone
 from pathlib import Path
 import json
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import filedialog,messagebox
 from .desktop_controls import JobControls
 from .desktop_job import start_job
-from .gui_config import build_config, TIMING_NOTE
-from .gui_observer import ObserverDialog, DEFAULTS, path_entry
-from .gui_timeline import timeline_controls
+from .gui_config import build_config
+from .gui_observer import ObserverDialog,DEFAULTS
+from .gui_localization import Localizer
+from .gui_event_workspace import build_workspace
+from .migrate_desktop_project import migrate_project
 
 
 class App(JobControls):
@@ -17,100 +19,55 @@ class App(JobControls):
         self.root=root;self.process=None;self.output=None;self.observers=[]
         self.ui_language=tk.StringVar(value='中文');self.status_key='idle'
         self.labels=[];self.combos=[];self.fields={}
-        root.title('OccultationVisualiser');root.geometry('1100x1000');root.minsize(900,920)
-        body=ttk.Frame(root,padding=16);body.pack(fill='both',expand=True)
-        ttk.Label(body,text='OccultationVisualiser',font=('',22,'bold')).pack(anchor='w')
-        ttk.Label(body,text='共同事件 Shared event → 添加观测者 Add observers → 核验 / 生成 Verify / Generate').pack(anchor='w',pady=6)
-        event=ttk.LabelFrame(body,text='事件信息 · 所有 observer 共用',padding=10);event.pack(fill='x')
-        fields=[('event','小行星 / Event',''),('target','目标星 / Target',''),
-                ('date_utc','UTC 日期',datetime.now(timezone.utc).strftime('%Y-%m-%d')),
-                ('start_utc','手动开始 / Manual start UTC',''),('end_utc','手动结束 / Manual end UTC',''),
-                ('step_s','显示间隔 / Step (s)','0.1')]
-        for i,(key,label,default) in enumerate(fields):
-            row,col=divmod(i,2);self.fields[key]=tk.StringVar(value=default)
-            ttk.Label(event,text=label).grid(row=row,column=col*2,sticky='w',padx=4,pady=4)
-            ttk.Entry(event,textvariable=self.fields[key]).grid(row=row,column=col*2+1,sticky='ew',padx=4)
-        for c in (1,3):event.columnconfigure(c,weight=1)
-        self.fields['language']=tk.StringVar(value='both')
-        ttk.Label(event,text='输出语言 / Language').grid(row=3,column=0,sticky='w')
-        ttk.Combobox(event,textvariable=self.fields['language'],values=('both','en','zh'),state='readonly').grid(row=3,column=1,sticky='ew')
-        timeline_controls(body,self.fields)
-        output=ttk.Frame(body);output.pack(fill='x',pady=8);output.columnconfigure(1,weight=1)
-        self.fields['output_root']=tk.StringVar()
-        path_entry(output,self.fields['output_root'],0,'输出文件夹 / Output',True)
-        observers=ttk.LabelFrame(body,text='Observers · 每站独立文件、曝光与 expected time',padding=10);observers.pack(fill='both',expand=True)
-        self.tree=ttk.Treeview(observers,columns=('mode','curve','coordinates','expected'),show='tree headings',height=5,selectmode='browse')
-        for key,label,width in [('#0','Observer',140),('mode','来源 / Mode',120),('curve','曲线 / Curve',270),('coordinates','Latitude, Longitude (°)',240),('expected','Expected UTC',150)]:
-            self.tree.heading(key,text=label);self.tree.column(key,width=width)
-        self.tree.pack(fill='both',expand=True);self.tree.bind('<Double-1>',lambda _:self.edit_observer())
-        row=ttk.Frame(observers);row.pack(fill='x',pady=6)
-        for label,action in [('添加 Add',self.add_observer),('编辑 Edit',self.edit_observer),('删除 Delete',self.delete_observer)]:
-            ttk.Button(row,text=label,command=action).pack(side='left',padx=3)
-        self.quality=ttk.Button(row,text='噪声诊断 Quality',command=lambda:self.start(quality_only=True));self.quality.pack(side='left',padx=8)
-        ttk.Button(row,text='查看诊断 View report',command=self.show_quality).pack(side='left')
-        ttk.Label(body,text=TIMING_NOTE,wraplength=1030).pack(anchor='w',pady=8)
-        actions=ttk.Frame(body);actions.pack(fill='x',pady=5)
-        self.generate=ttk.Button(actions,text='生成 Generate',command=self.start);self.generate.pack(side='left')
-        self.config_generate=ttk.Button(actions,text='仅核验 Verify',command=lambda:self.start(True));self.config_generate.pack(side='left',padx=5)
-        ttk.Button(actions,text='保存项目 Save',command=self.save_project).pack(side='left',padx=5)
-        ttk.Button(actions,text='打开项目 Open',command=self.open_project).pack(side='left',padx=5)
-        self.cancel=ttk.Button(actions,text='取消 Cancel',command=self.stop,state='disabled');self.cancel.pack(side='left')
-        from .desktop_job import open_folder
-        self.reveal=ttk.Button(actions,text='打开输出 Open output',command=lambda:open_folder(self.output),state='disabled');self.reveal.pack(side='left',padx=5)
-        self.status=tk.StringVar(value='添加 observer；可选择或拖入文件。 Add an observer to begin.')
-        ttk.Label(body,textvariable=self.status).pack(anchor='w')
-        self.progress=ttk.Progressbar(body,mode='indeterminate');self.progress.pack(fill='x',pady=5)
-        self.log=tk.Text(body,height=5,wrap='word',state='disabled');self.log.pack(fill='x')
-        root.protocol('WM_DELETE_WINDOW',self.close)
+        self.i18n=Localizer(root,self.ui_language)
+        build_workspace(self)
 
     def refresh(self):
         self.tree.delete(*self.tree.get_children())
         for i,o in enumerate(self.observers):
-            coordinates=', '.join(o.get(k,'') for k in ('latitude_deg','longitude_deg'))
-            self.tree.insert('', 'end',iid=str(i),text=o['name'],values=(o['mode'],Path(o['curve']).name,coordinates,o['predicted_utc']))
+            coordinates=', '.join(o.get(k,'') for k in ('latitude_deg','longitude_deg')).strip(', ')
+            self.tree.insert('','end',iid=str(i),text=o['name'],values=(o['mode'],Path(o['curve']).name,coordinates or '—',o['predicted_utc'] or '—'))
 
     def add_observer(self):
         if len(self.observers)>=8:
-            messagebox.showerror('Observers','最多 8 位 / Maximum 8');return
+            messagebox.showerror(self.tr('stations_title'),'Maximum 8',parent=self.root);return
         def save(values):self.observers.append(values);self.refresh()
-        ObserverDialog(self.root,{**DEFAULTS,'name':f'Observer {len(self.observers)+1}'},save)
+        ObserverDialog(self.root,{**DEFAULTS,'name':f'Observer {len(self.observers)+1}'},save,self.ui_language)
 
     def edit_observer(self):
         selected=self.tree.selection()
         if not selected:return
         index=int(selected[0])
         def save(values):self.observers[index]=values;self.refresh()
-        ObserverDialog(self.root,self.observers[index],save)
+        ObserverDialog(self.root,self.observers[index],save,self.ui_language)
 
     def delete_observer(self):
         selected=self.tree.selection()
         if selected:self.observers.pop(int(selected[0]));self.refresh()
 
     def save_project(self):
-        path=filedialog.asksaveasfilename(defaultextension='.json',filetypes=[('Project JSON','*.json')])
+        path=filedialog.asksaveasfilename(parent=self.root,title=self.tr('save_project'),defaultextension='.json',filetypes=[('JSON','*.json')])
         if path:
-            data=dict(gui_version=1,event={k:v.get() for k,v in self.fields.items()},observers=self.observers)
+            data=dict(gui_version=1,ui_language=self.ui_language.get(),event={k:v.get() for k,v in self.fields.items()},observers=self.observers)
             Path(path).write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding='utf-8')
 
+    def load_project(self,path):
+        """Load supported historical choices without resetting scientific overrides."""
+        data=json.loads(Path(path).read_text(encoding='utf-8'))
+        event,observers=migrate_project(data,DEFAULTS)
+        for k,v in self.fields.items():v.set(str(event.get(k,v.get())))
+        self.observers=observers;self.refresh()
+        if data.get('ui_language') in ('中文','English'):self.ui_language.set(data['ui_language'])
+
     def open_project(self):
-        path=filedialog.askopenfilename(filetypes=[('Project JSON','*.json')])
-        if not path:return
-        try:
-            data=json.loads(Path(path).read_text(encoding='utf-8'))
-            if data.get('gui_version')!=1 or not isinstance(data['observers'],list) or len(data['observers'])>8:
-                raise ValueError('Choose a saved GUI project / 请选择 GUI 保存的项目')
-            fallback=dict(window_mode='手动 UTC',event_padding_s='10',skip_gaps='保留',
-                          playback_mode='真实时间',video_duration_s='60',station_order='输入顺序')
-            values={k:str(data['event'].get(k,fallback.get(k,v.get()))) for k,v in self.fields.items()}
-            observers=[{k:str(o.get(k,v)) for k,v in DEFAULTS.items()} for o in data['observers']]
-            for k,v in values.items():self.fields[k].set(v)
-            self.observers=observers;self.refresh()
-        except Exception as e:messagebox.showerror('Open project',str(e))
+        path=filedialog.askopenfilename(parent=self.root,title=self.tr('open_project'),filetypes=[('JSON','*.json')])
+        if path:
+            try:self.load_project(path)
+            except Exception as exc:messagebox.showerror(self.tr('open_project'),str(exc),parent=self.root)
 
     def start(self,verify_only=False,quality_only=False):
         try:
-            self.verify_only=verify_only
-            self.quality_only=quality_only
+            self.verify_only=verify_only;self.quality_only=quality_only
             cfg=build_config({k:v.get() for k,v in self.fields.items()},self.observers,quality_only)
             self.output=Path(cfg['output_root'])/datetime.now(timezone.utc).strftime('occultation_%Y%m%d_%H%M%S_%f')
             self.output.mkdir(parents=True)
@@ -119,19 +76,19 @@ class App(JobControls):
             if verify_only:argv.append('--verify-only')
             if quality_only:argv.append('--quality-only')
             self.process=start_job(argv,self.output)
-        except Exception as e:messagebox.showerror('检查输入 / Check inputs',str(e));return
+        except Exception as exc:messagebox.showerror(self.tr('cannot_start'),str(exc),parent=self.root);return
         self.begin_poll()
 
     def show_quality(self):
         path=self.output/'media/quality_report.json' if self.output else None
         if path is None or not path.exists():
-            chosen=filedialog.askopenfilename(title='选择 quality_report.json',filetypes=[('Quality report','*.json')])
+            chosen=filedialog.askopenfilename(parent=self.root,title=self.tr('choose_quality'),filetypes=[('JSON','*.json')])
             if not chosen:return
             path=Path(chosen)
         try:
             from .gui_quality import QualityDialog
-            QualityDialog(self.root,path)
-        except Exception as exc:messagebox.showerror('Noise diagnostics',str(exc))
+            QualityDialog(self.root,path,self.ui_language)
+        except Exception as exc:messagebox.showerror(self.tr('quality_title'),str(exc),parent=self.root)
 
 
 def run(smoke=False):

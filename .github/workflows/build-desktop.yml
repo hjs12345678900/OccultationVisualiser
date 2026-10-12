@@ -6,7 +6,21 @@ on:
 permissions:
   contents: write
 jobs:
+  prepare-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure tag release is ready before packaging
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --verify-tag --draft --title "$RELEASE_TAG" --notes "Verified desktop packages are being prepared."
+          fi
   package:
+    needs: prepare-release
     strategy:
       fail-fast: false
       matrix:
