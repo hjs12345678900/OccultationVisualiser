@@ -3,6 +3,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 from .platform_runtime import load_font
 from .render_utc_axis import UtcAxis, coordinate_label
+from .read_saved_snr import snr_label
 
 
 def format_counts(value):
@@ -46,7 +47,8 @@ class StationPanels:
             color = COLORS[k % len(COLORS)]
             draw.text((42,y+10),station['config']['name'],font=load_font(24,language,True),fill=color)
             draw.text((965,y+10),station['config']['name'],font=load_font(24,language,True),fill=color)
-            draw.text((42,y+34),coordinate_label(station['config']),font=load_font(15,language),fill=(189,200,217))
+            details=' · '.join(v for v in (coordinate_label(station['config']),snr_label(station.get('snr',{}),language)) if v)
+            draw.text((42,y+34),details,font=load_font(15,language),fill=(189,200,217))
             values = [r.counts for r in station['rows'] if r.valid and self.sx(r.utc) is not None]
             if not values: values = [r.counts for r in station['rows'] if r.valid]
             lo,hi = min(0.,min(values)),max(0.,max(values))
@@ -65,7 +67,8 @@ class StationPanels:
         cut=(' · // 跳过 UTC 空档' if language=='zh' else ' · // UTC gaps skipped') if len(self.axis.segments)>1 else ''
         footer = f'统一绝对 UTC · 原始光变采样 · 展示间隔 {step:g} 秒 · {speed}{cut}' if language=='zh' else f'Shared absolute UTC · original curve cadence · {step:g} s display steps · {speed}{cut}'
         draw.text((28,self.size[1]-84),footer,font=self.font,fill=(188,203,222))
-        self.footer = context['coverage_note'][language]
+        definition='SNR = B / σB（掩食外基线的单帧散布）；LC 表示直接使用 LC 基线' if language=='zh' else 'SNR = B / σB (baseline per-exposure scatter); LC uses the saved LC baseline'
+        self.footer = context['coverage_note'][language]+' · '+definition
 
     def sx(self,utc):
         return self.axis.position(utc)

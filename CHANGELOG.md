@@ -1,3 +1,9 @@
+# 1.7.0
+
+- Display baseline per-exposure SNR beside each station's coordinates, using saved PyOTE B/sigmaB when available.
+- Calculate missing baseline parameters directly from valid saved exposures wholly outside supplied D/R; mark Tangra LC values as LC baseline, other fallback curves as estimated.
+- Save metric definitions, parameters and baseline-frame selection in run metadata. Keep DNR and separately reported software metrics distinct from baseline SNR; no new fitting or photometry.
+
 # 1.6.1
 
 - Reserve a separate coordinate header above each plot so latitude/longitude cannot overlap its top ADU tick.

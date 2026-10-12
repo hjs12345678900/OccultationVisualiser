@@ -88,6 +88,7 @@ class TimelineTests(unittest.TestCase):
             out=make_station_media(path,root/'out')
             meta=json.loads((out/'media_metadata.json').read_text())
             self.assertEqual([s['name'] for s in meta['stations']],['S1','S0'])
+            self.assertTrue(all(s['baseline_snr']['snr'] is None for s in meta['stations']))
             self.assertEqual(len(meta['timeline_plan']['skipped_gaps']),1)
             for lang in ('en','zh'):
                 output=meta['outputs'][lang]

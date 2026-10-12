@@ -6,7 +6,7 @@ Turn an occultation observation into a synchronized star-field and light-curve a
 
 Previously **OccultationMedia**. New builds use `OccultationVisualiser.app` / `OccultationVisualiser.exe` and the `occultationvisualiser` command. The Python import `occultation_media` and old `occultation-media` commands remain compatible. The GitHub repository is now OccultationVisualiser; existing local checkouts may retain the old folder name.
 
-## GUI quick start (v1.6)
+## GUI quick start (v1.7)
 
 All inputs are available in the desktop window; writing JSON is not required.
 
@@ -19,6 +19,8 @@ All inputs are available in the desktop window; writing JSON is not required.
 7. **Save / Open** retains shared event information and all observers as a GUI project. No JSON editing is needed. Each run separately saves its resolved configuration for reproducibility.
 
 Choose **skip / keep gaps** and **real time / fixed duration** in the video settings. D/R windows require saved PyOTE results or supplied boundaries for every observer. Skipped gaps have `//` plot-axis marks and an absolute UTC clock jump. Source clocks and D/R remain unchanged; missing images inside retained windows stay blank. Fixed duration changes playback speed only; H.264 uses 25 fps (nearest 40 ms total duration), GIF uses centiseconds. Old GUI projects open in manual/input-order mode.
+
+Station headers automatically show baseline per-exposure SNR (`B / sigmaB`). Saved PyOTE baseline parameters are preferred; otherwise calculate directly from valid saved exposures wholly outside supplied D/R. Tangra LC values are labelled `(LC baseline)`; other fallback curves are labelled as estimated. The statistic uses the full saved curve and is independent of video cuts. See [SNR definitions and provenance](docs/native_station_media.md#baseline-snr-labels).
 
 ### Timestamp policy
 

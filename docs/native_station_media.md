@@ -35,6 +35,7 @@ Each station supplies:
 | `latitude_deg`, `longitude_deg` | Geographic degrees, north/east positive and south/west negative; both required together. Displayed as N/S and E/W; never star RA/Dec |
 | `altitude_m`, `coordinate_source` | Optional elevation and coordinate provenance |
 | `coordinate_source_file`, `source_manifest` | Optional coordinate evidence and source selection manifest, both hashed with the inputs |
+| `reported_snr`, `snr_source_file` | Optional separately reported metric object and evidence file (hashed); preserved in metadata, never substituted for baseline SNR |
 | `curve_format` | `pymovie_csv`, `tangra_csv`, or `tangra_lc` |
 | `target_column` | Native net-count column such as `signal-target` or `signal-Altona`; no extra background subtraction |
 | `exposure_s` | Positive supplied exposure for CSV; LC uses its recorded exposure |
@@ -55,6 +56,12 @@ Each station supplies:
 | `fits_hdu`, `adv_python` | Optional explicit FITS image HDU / compatible ADV decoder executable |
 
 For C3/C4 set `curve` to the saved `native_analysis.csv`, `tracking_csv` to `pymovie_native.csv`, `native_mode` to the saved mode and `pyote_result` to that mode's native results. The normalized values are read exactly as saved; no normalization, smoothing, integration or fitting runs in this tool. Without supplied D/R the curve and fields still render, with no invented event overlay.
+
+## Baseline SNR labels
+
+Each station displays dimensionless per-exposure baseline `SNR = B / sigmaB` beside its coordinates. Saved native PyOTE baseline mean B and noise sigmaB are preferred. Event-drop `DNR = (B-A)/sigmaB` is recorded separately and is never labelled baseline SNR. The noise is single-exposure scatter, not uncertainty in the mean.
+
+If native baseline parameters are absent, calculate mean and population standard deviation (`ddof=0`) directly from valid saved exposures wholly outside supplied D/R. This includes the net-count series embedded in a Tangra LC: there is no need to re-extract photometry from FITS or export CSV. Exclude exposures straddling either transition. Use the full saved recording, independently of display cuts; apply no smoothing, detrending, clipping, integration or new timing fit. Tangra LC values are labelled `(LC baseline)` / `（LC 基线）`; other fallback curves use `≈ (estimated)` / `≈（估算）`. Missing D/R, fewer than three baseline exposures, or nonpositive mean/scatter produces an unavailable label. `baseline_snr` metadata stores parameters, method and selected frame IDs; input curves/results are hashed. Separately reported software SNR values retain their own labels and source rather than assuming identical definitions.
 
 ## Timestamp contract
 

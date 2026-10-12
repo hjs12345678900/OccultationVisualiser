@@ -7,6 +7,7 @@ from .read_station_curves import read_station_curve
 from .prepare_station_frames import StationFrames, nearest_sample
 from .prepare_lc_frames import LCFrames
 from .read_saved_transitions import saved_transitions
+from .read_saved_snr import station_snr
 from .record_media_run import write_json, input_manifest, finish_record, sha256, snapshot_code
 from .plan_station_timeline import order_stations, plan_timeline
 from .render_station_panels import StationPanels
@@ -24,7 +25,7 @@ def load_config(path):
     if cfg.get('alignment') != 'absolute_utc' or not 1 <= len(cfg.get('stations',[])) <= 8:
         raise ValueError('Require one to eight stations and alignment=absolute_utc')
     for values in [cfg, *cfg['stations']]:
-        for key in ('curve','source','output_root','pyote_result','tracking_csv','timing_source_file','coordinate_source_file','source_manifest','adv_python'):
+        for key in ('curve','source','output_root','pyote_result','tracking_csv','timing_source_file','coordinate_source_file','source_manifest','snr_source_file','adv_python'):
             if values.get(key):
                 file = Path(values[key]).expanduser()
                 values[key] = str((path.parent/file).resolve() if not file.is_absolute() else file.resolve())
@@ -60,8 +61,9 @@ def make_station_media(config_path, output_dir=None, verify_only=False):
             station = dict(config=c, rows=rows, frames=frames, D=None, R=None, curve_info=info)
             stations.append(station)
             station['D'], station['R'], station['timing'] = saved_transitions(c, rows)
+            station['snr'] = station_snr(c, rows, station['D'], station['R'])
             paths += curve_paths+frames.paths
-            paths += [c[k] for k in ('pyote_result','tracking_csv','timing_source_file','coordinate_source_file','source_manifest') if c.get(k)]
+            paths += [c[k] for k in ('pyote_result','tracking_csv','timing_source_file','coordinate_source_file','source_manifest','snr_source_file') if c.get(k)]
             residuals = [record['residual_s'] for record in frames.records.values()]
             coverage.append(dict(name=c['name'], samples=len(rows), matched_images=len(frames.mapping),
                 curve_start_utc=str(rows[0].utc), curve_end_utc=str(rows[-1].utc),
@@ -102,6 +104,7 @@ def make_station_media(config_path, output_dir=None, verify_only=False):
         for s, cov in zip(stations, coverage):
             f = s['frames']
             metadata.append(dict(**cov, curve_info=s['curve_info'], timing=s['timing'],
+                baseline_snr=s['snr'], separately_reported_snr=s['config'].get('reported_snr'),
                 coordinates={k:s['config'][k] for k in ('latitude_deg','longitude_deg','altitude_m','coordinate_source','coordinate_source_file') if k in s['config']},
                 D_utc=str(s['D']) if s['D'] is not None else None, R_utc=str(s['R']) if s['R'] is not None else None,
                 stretch=f.limits, frame_alignment=[f.records[i] for i in sorted(f.records)]))

@@ -6,7 +6,7 @@
 
 原名 **OccultationMedia**。新构建使用 `OccultationVisualiser.app` / `OccultationVisualiser.exe` 和 `occultationvisualiser` 命令；旧 `occultation-media` 命令及 Python 导入名 `occultation_media` 保留兼容。GitHub 仓库已改名为 OccultationVisualiser；现有本地目录可以保留旧名称。
 
-## GUI 快速开始（v1.6）
+## GUI 快速开始（v1.7）
 
 所有输入都可以在窗口内完成，无需手写 JSON。
 
@@ -19,6 +19,8 @@
 7. **保存项目 Save / 打开项目 Open** 保留公共事件和所有 observer；不需要编辑保存的 JSON。运行时另存解析后的配置，以便复现。
 
 视频设置可选择 **跳过 / 保留**站点间空档，及 **真实时间 / 指定时长**。D/R 模式需要每站的 PyOTE 结果或可靠的 D/R。跳过空档会在光变横轴标出 `//`，画面 UTC 跳到下一段；各站原始时标与 D/R 不变，保留段内缺图仍显示“无画面”。指定时长以秒填写，仅改变播放速度；MP4 按 25 fps 取整（最多 20 ms 时长差），GIF 按厘秒显示。旧 GUI 项目以手动窗口、原输入顺序打开。
+
+每站坐标旁自动显示基线单帧 **SNR = B / σB**。优先读取保存的 PyOTE 基线参数；否则直接使用完整掩食外曝光的保存计数计算。Tangra LC 显示“LC 基线”，其他曲线的回退估计标注“估算”。采用整条保存曲线，不随视频裁剪范围改变；不重新拟合 D/R，也不把噪声除以 √N。[SNR 定义与来源记录](docs/native_station_media.md#baseline-snr-labels)。
 
 ### 时间戳约定
 
