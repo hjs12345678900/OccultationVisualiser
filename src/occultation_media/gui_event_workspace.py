@@ -6,15 +6,20 @@ from .gui_path_entry import path_entry
 from .gui_timeline import timeline_controls
 from .desktop_job import open_folder
 from .record_media_run import version
+from .gui_branding import brand_photo,set_window_icon
 
 
 def build_workspace(app):
     """Bind localized captions to stable application fields and actions."""
     root,ui=app.root,app.i18n
     root.title('OccultationVisualiser '+version());root.geometry('1100x950');root.minsize(920,850)
+    set_window_icon(root)
     body=ttk.Frame(root,padding=14);body.pack(fill='both',expand=True)
     header=ttk.Frame(body);header.pack(fill='x')
+    app.header_icon=brand_photo(root,'icon.png',(46,46))
+    ttk.Label(header,image=app.header_icon).pack(side='left',padx=(0,8))
     ttk.Label(header,text='OccultationVisualiser',font=('',22,'bold')).pack(side='left')
+    ui.button(header,'cover_title',command=app.show_cover).pack(side='left',padx=12)
     switch=ttk.LabelFrame(header,text='界面语言 / UI language',padding=7);switch.pack(side='right')
     app.language_picker=ttk.Combobox(switch,textvariable=app.ui_language,values=('中文','English'),state='readonly',width=12,font=('',13,'bold'))
     app.language_picker.pack();app.language_picker.bind('<<ComboboxSelected>>',app.change_language)

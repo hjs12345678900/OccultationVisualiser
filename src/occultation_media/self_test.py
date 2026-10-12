@@ -17,6 +17,9 @@ from .platform_runtime import load_font,ffmpeg_executable
 def run():
     """Return test results; raise on missing bundled resources or wrong outputs."""
     from ravf import RavfWriter,RavfFrameType
+    from .gui_branding import branding_asset
+    for name in ('cover.png','icon.png','app.ico','app.icns'):
+        with Image.open(branding_asset(name)) as artwork:artwork.verify()
     load_font(20,'en');load_font(20,'zh')
     with tempfile.TemporaryDirectory(prefix='occultation-self-test-') as tmp:
         root=Path(tmp);base=np.arange(2048,dtype='<u2').reshape(32,64)+1000
@@ -94,4 +97,4 @@ def run():
                 if image.n_frames!=6:raise AssertionError('Native GIF elapsed timeline differs')
     return {'ok':True,'system':platform.system(),'architecture':platform.machine(),
             'exports':['SER','FITS','RAVF','native PyMovie SER'],'languages':['en','zh'],'outputs':['GIF','PNG','MP4'],
-            'noise_diagnostics':True,'automatic_metadata_and_utc':True,'ffmpeg':ffmpeg_executable(),'adv':'Requires separate real-observation smoke test'}
+            'branding_resources':True,'noise_diagnostics':True,'automatic_metadata_and_utc':True,'ffmpeg':ffmpeg_executable(),'adv':'Requires separate real-observation smoke test'}

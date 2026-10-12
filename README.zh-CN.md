@@ -2,6 +2,10 @@
 
 [English](README.md) | **简体中文**
 
+![OccultationVisualiser 软件封面](src/occultation_media/assets/branding/cover.png)
+
+启动封面在 1.2 秒后自动关闭，也可点击或按 Escape 关闭；主窗口“封面 / 关于”可重新查看。配套图标已接入原生应用包。图案是概念品牌插画，不是实测光变。[素材生成提示词](src/occultation_media/assets/branding/prompts.json) 已保存，发布压缩包也附带 `branding` 文件夹。
+
 将已有的掩星测光结果与观测星场同步，制作 GIF、MP4 和 PNG 预览。掩星指天体从恒星前方经过，使恒星短暂变暗。本软件负责可视化，不从录像重新测光，也不运行 PyOTE 拟合。已有导出文件后，无需安装 Tangra、PyMovie 或 PyOTE 即可制作。
 
 原名 **OccultationMedia**。新构建使用 `OccultationVisualiser.app` / `OccultationVisualiser.exe` 和 `occultationvisualiser` 命令；旧 `occultation-media` 命令及 Python 导入名 `occultation_media` 保留兼容。GitHub 仓库已改名为 OccultationVisualiser；现有本地目录可以保留旧名称。

@@ -1,3 +1,9 @@
+# 1.10.0
+
+- Add a custom asteroid-occultation cover and coordinated transparent application icon, with original imagegen prompts and asset hashes.
+- Show a dismissible 1.2-second launch cover; reopen it from Cover/About. Add the icon to the desktop header, native macOS app bundle and Windows executable.
+- Ship artwork beside the application and in Python packages; frozen self-tests verify all branding resources.
+
 # 1.9.0
 
 - Add an obvious top-right Chinese/English interface picker, live translations of the event/editor/diagnostics windows and stable saved values independent of caption language.

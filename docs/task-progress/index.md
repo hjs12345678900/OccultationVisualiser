@@ -23,3 +23,5 @@
 - [v1.8.0 p001](v1.8.0/task-progress_v1.8.0_p001.md): TASK-0022–0023.
 
 - [v1.9.0 p001](v1.9.0/task-progress_v1.9.0_p001.md): TASK-0024–0026.
+
+- [v1.10.0 p001](v1.10.0/task-progress_v1.10.0_p001.md): TASK-0027–0028.

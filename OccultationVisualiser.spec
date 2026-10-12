@@ -19,9 +19,11 @@ a=Analysis([str(root/'launch.py')],pathex=[str(vendor),str(root/'src')],
            datas=datas,hiddenimports=hidden,excludes=['matplotlib','IPython','pytest','cv2'])
 pyz=PYZ(a.pure)
 exe=EXE(pyz,a.scripts,[],exclude_binaries=True,name='OccultationVisualiser',
+        icon=str(root/'src/occultation_media/assets/branding/app.ico') if sys.platform=='win32' else None,
         debug=False,strip=False,upx=False,console=False,
         target_arch='x86_64' if sys.platform=='darwin' else None)
 coll=COLLECT(exe,a.binaries,a.datas,strip=False,upx=False,name='OccultationVisualiser')
 if sys.platform=='darwin':
     app=BUNDLE(coll,name='OccultationVisualiser.app',bundle_identifier='org.occultation.media',
+               icon=str(root/'src/occultation_media/assets/branding/app.icns'),
                info_plist={'CFBundleShortVersionString':tomllib.loads((root/'pyproject.toml').read_text())['project']['version'],'NSHighResolutionCapable':True})

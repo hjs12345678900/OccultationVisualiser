@@ -1,5 +1,7 @@
 """Desktop vocabulary and contextual help, separate from scientific values."""
 TEXT={
+ 'cover_title':('封面 / 关于','Cover / About'),
+ 'enter_workspace':('进入工作区','Enter workspace'),
  'idle':('填写事件并添加站点后开始。','Enter event information and add a station to begin.'),
  'running':('正在处理，进度和详细信息见下方日志。','Processing; progress and details appear in the log below.'),
  'done':('任务完成，结果已保存。','Task complete; outputs saved.'),

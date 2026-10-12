@@ -1,0 +1,26 @@
+{
+  "method": "built-in image_gen",
+  "files": {
+    "icon.png": {
+      "sha256": "bb3a6ead0acc4ba0f35eaaf8e406873fc4061a32d7bd5d07205b6e5e30ac5345",
+      "bytes": 1718780
+    },
+    "app.icns": {
+      "sha256": "58e85f159abdcaa8a53bad23bbb5aa89519efa2fe294616852113554b65c9f59",
+      "bytes": 1917318
+    },
+    "app.ico": {
+      "sha256": "b93948ce385e36dd9fb535ff276886e58255e9ca81ed70ff9ad2f60f9e1af62d",
+      "bytes": 128840
+    },
+    "cover.png": {
+      "sha256": "bb7a59f621d9d17580d903bd5b70f45a874c635b5e6e60f49b0320d74abff204",
+      "bytes": 1629405
+    }
+  },
+  "original_sources": {
+    "cover.png": "exec-e6fb1ec3-5b15-414a-93e6-0db88fc4a08b.png",
+    "icon.png": "exec-7757a57d-559c-418c-a025-7de54ed39445.png"
+  },
+  "container_conversion": "Pillow ICNS/ICO standard-size encoding; generated PNG artwork preserved unchanged"
+}

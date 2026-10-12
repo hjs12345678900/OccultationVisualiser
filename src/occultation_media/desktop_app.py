@@ -90,9 +90,14 @@ class App(JobControls):
             QualityDialog(self.root,path,self.ui_language)
         except Exception as exc:messagebox.showerror(self.tr('quality_title'),str(exc),parent=self.root)
 
+    def show_cover(self,auto_close_ms=None):
+        from .gui_branding import CoverDialog
+        return CoverDialog(self.root,self.ui_language,auto_close_ms)
+
 
 def run(smoke=False):
     from tkinterdnd2 import TkinterDnD
-    root=TkinterDnD.Tk();App(root)
+    root=TkinterDnD.Tk();app=App(root)
+    root.after(50,lambda:app.show_cover(auto_close_ms=1200))
     if smoke:root.after(1500,root.destroy)
     root.mainloop()

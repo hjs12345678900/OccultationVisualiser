@@ -2,6 +2,10 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
+![OccultationVisualiser cover](src/occultation_media/assets/branding/cover.png)
+
+The launch cover closes after 1.2 seconds or a click/Escape; reopen it with **Cover / About**. The coordinated icon appears in native application packages. This is conceptual brand artwork, not a measured light curve. [Artwork generation prompts](src/occultation_media/assets/branding/prompts.json) are included; release archives also contain the `branding` folder.
+
 Turn an occultation observation into a synchronized star-field and light-curve animation (GIF, MP4 and PNG preview). An occultation is a star temporarily hidden by an intervening object. This tool visualises **existing photometry**; it does not extract a light curve from a video or run PyOTE fitting. No Tangra, PyMovie or PyOTE installation is needed to render already exported inputs.
 
 Previously **OccultationMedia**. New builds use `OccultationVisualiser.app` / `OccultationVisualiser.exe` and the `occultationvisualiser` command. The Python import `occultation_media` and old `occultation-media` commands remain compatible. The GitHub repository is now OccultationVisualiser; existing local checkouts may retain the old folder name.
