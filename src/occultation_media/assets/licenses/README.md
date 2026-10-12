@@ -1,48 +1,97 @@
 # OccultationVisualiser
 
-**English** | [简体中文](README.zh-CN.md)
+OccultationVisualiser creates synchronized videos of asteroid occultations from existing light curves and recorded star-field frames. It supports one to eight observing stations on a shared UTC timeline, with light curves on the left and images on the right.
 
-Turn an occultation observation into a synchronized star-field and light-curve animation (GIF, MP4 and PNG preview). An occultation is a star temporarily hidden by an intervening object. This tool visualises **existing photometry**; it does not extract a light curve from a video or run PyOTE fitting. No Tangra, PyMovie or PyOTE installation is needed to render already exported inputs.
+[Download the latest release](https://github.com/hjs12345678900/OccultationVisualiser/releases/latest) · [简体中文](README.zh-CN.md) · [Configuration reference](docs/native_station_media.md)
 
-Previously **OccultationMedia**. New builds use `OccultationVisualiser.app` / `OccultationVisualiser.exe` and the `occultationvisualiser` command. The Python import `occultation_media` and old `occultation-media` commands remain compatible. The GitHub repository is now OccultationVisualiser; existing local checkouts may retain the old folder name.
+## Download and open
 
-## GUI quick start (v1.5)
+Standalone packages include the runtime, fonts and video encoder. Python, Tangra, PyMovie and PyOTE do not need to be installed to open the app and render exported observations.
 
-All inputs are available in the desktop window; writing JSON is not required.
-
-1. Fill in the shared **event, target star, UTC date, display start/end UTC, display step** and output language. Across midnight, enter a full end date-time, e.g. `2026-09-13T00:00:05`.
-2. Choose or drop an output folder. **Add**, **Edit** (or double-click), and **Delete** manage 1–8 observers sharing absolute UTC.
-3. In each observer editor, switch **Tangra / PyMovie–PyOTE**, then browse or drop the curve, image source and optional PyOTE result. Use the FITS-folder button or drop a whole sequence folder. Each file box accepts one file/folder at a time.
-4. Set the observer name, exposure in milliseconds, original frame ID at source index 0, and optional observer-specific **Expected UTC**. The first `signal-` CSV column is suggested for PyMovie; verify it if several targets exist.
-5. **Advanced** contains supplied D/R, target coordinates, FITS HDU, SER byte order, known camera offset and UTC tolerance. There is no start/middle/end selector.
-6. **Verify** checks inputs and native timestamps without encoding. **Generate** creates GIF, MP4 and PNG; use **Open output** to inspect media and timestamp audit records.
-7. **Save / Open** retains shared event information and all observers as a GUI project. No JSON editing is needed. Each run separately saves its resolved configuration for reproducibility.
-
-### Timestamp policy
-
-For current SharpCap recordings, SER and FITS `DATE-OBS` mean exposure start and receive half an exposure for midpoint display. `DATE-AVG` and ADV are midpoint; RAVF uses its native start. PyMovie follows the image-source convention; Tangra CSV is interpreted as exported midpoint UTC. Saved PyOTE D/R is never shifted again.
-
-The policy appears in the GUI and saved configuration. Source and curve UTC must still agree. Older SharpCap versions, externally retimed data or already-converted CSVs may differ: investigate mismatches rather than arbitrarily enlarging tolerance. [SharpCap author's explanation](https://forums.sharpcap.co.uk/viewtopic.php?t=9540).
-
-### Input checklist
-
-| Workflow | Files |
+| Platform | Start |
 | --- | --- |
-| Tangra full field | Photometry CSV (object 1) or timed LC curve + ADV2/SER/RAVF/timed FITS sequence |
-| Tangra cutout | CSV or LC curve + matching LC image source; only the 35×35 recorded target stamp |
-| PyMovie | CSV + original image source; optional original tracking CSV |
-| PyOTE interval | Add compatible result JSON, or enter both D/R UTC in Advanced |
+| Windows 10/11 x64 | Extract the whole Windows ZIP, then open `OccultationVisualiser.exe`. Keep the `_internal` folder beside it. |
+| macOS 14+, Apple Silicon (M series) | Download `OccultationVisualiser-macOS-Apple-Silicon.zip`, extract it and open `OccultationVisualiser.app`. Runs natively; Rosetta is not required. |
+| macOS 14+, Intel | Download `OccultationVisualiser-macOS-Intel.zip`, extract it and open `OccultationVisualiser.app`. |
 
-AVI/MP4 are not supported inputs. Screenshots, reports and CSV alone cannot provide recorded images. Strict timing mode does not accept FITS cubes without individual frame times.
+The macOS package is not Apple-notarized.
 
-## 2. Start the application
+## Prepare your files
 
-Existing packages are listed under [Releases](https://github.com/hjs12345678900/OccultationVisualiser/releases). Older releases retain the old application name; this source rename does not update an already downloaded package.
+For an animation, choose a light curve and its matching original recording. Keep the observation files in their existing folder.
 
-- **Windows 10/11 x64:** extract the whole ZIP and open `OccultationVisualiser.exe`. Keep `_internal` beside it.
-- **macOS 14+:** extract and open `OccultationVisualiser.app`. The configured build targets Intel; Apple Silicon needs Rosetta. Packages are unsigned/unnotarized.
+| Light curve | Matching images |
+| --- | --- |
+| Tangra CSV | ADV2, SER, RAVF, timed FITS sequence, or matching Tangra LC target stamps |
+| Tangra LC with recorded times | Original recording, or the target stamps embedded in the LC file |
+| PyMovie CSV | Original ADV2, SER, RAVF or timed FITS sequence |
+| Saved C3/C4 analysis CSV | Original recording; optionally the original tracking CSV if positions are absent |
 
-To run this checkout, use Python 3.13 with Tk support. Open a terminal **in the project folder**, then:
+Tangra CSV uses target object 1. PyMovie uses the selected `signal-<target>` column. LC stamps contain the recorded 35×35 target cutout; choose the original recording for a full-field view.
+
+AVI/MP4 are not supported as observation inputs. FITS sequences need per-frame UTC records. Compatible saved PyOTE result JSON can supply D/R; the supported schema is described in the [configuration reference](docs/native_station_media.md).
+
+## Make your first video
+
+1. Enter the asteroid name, target star and observation date in UTC. Choose an output folder.
+2. Click **Add station** and select its curve and images. Check the suggested target column. Exposure is read automatically from recorded metadata.
+3. Choose the time range and playback settings below.
+4. Click **Verify timestamps** to check agreement between the recorded image and curve times.
+5. Click **Generate**, then **Open output folder** to view the MP4, GIF and PNG previews.
+
+Use **Save project / Open project** to reuse inputs. The top-right **中文 / English** selector changes the interface language; **Export language** independently chooses Chinese, English or both for the media.
+
+### Time range and playback
+
+| Setting | Meaning |
+| --- | --- |
+| Full recording coverage | Use the saved curves' recording range. No typed start/end UTC or D/R is required. |
+| D/R event windows | Keep a selected number of seconds before disappearance D and after reappearance R. Default padding is 10 seconds. Each station needs saved or supplied D/R. |
+| Custom start/end UTC | Crop the displayed video, for example 09:54:20–09:54:45 UTC. Across midnight, include the end date: `2026-09-13T00:00:10`. |
+| Skip gaps | Omit gaps between retained recording/event windows. The clock still shows absolute UTC; axis breaks mark the jump. |
+| Real event speed | Play retained intervals at their recorded time scale. |
+| Set total video duration | Rescale playback to the chosen length, such as 20 seconds. Recorded UTC and D/R remain unchanged. |
+
+Stations are synchronized by absolute UTC. A station without an image at the displayed time stays blank. MP4 duration is quantized to 25 fps; GIF duration uses centiseconds.
+
+### Optional inputs
+
+Coordinates, altitude and prediction are optional for one or several stations. **North → south** sorts known locations and places unknown locations last. Supply latitude and longitude together if used.
+
+PyOTE results are optional for full-recording media. D/R can instead be entered in **Advanced**. Prediction is a separate label and is not a measured event boundary.
+
+The first-frame field is an optional **Advanced** mapping override for cropped recordings. By default, original UTC matches images to curve samples. It does not set the video's displayed start time.
+
+Exposure comes from FITS/ADV/RAVF/LC, PyMovie shutter metadata or CameraSettings. SER timestamps describe cadence, not exposure. If no exposure record exists, select CameraSettings or use the advanced exposure override. Older projects retain their explicit overrides.
+
+**Curve type** describes already-exported data: `raw` means original target counts; supported `C3/C4` exports were normalized using the corresponding reference star. Auto reads the saved result's mode, otherwise uses raw. Use a matching analysis CSV and result for C3/C4. The app imports these values without extracting photometry, normalizing or refitting.
+
+## Noise diagnostics
+
+**Noise diagnostics** reads saved curves without decoding images. It displays saved and guarded-baseline SNR separately, along with exposure, binning, camera evidence and available background/mask statistics.
+
+Baseline SNR is `B / sigmaB`, using per-exposure scatter. The diagnostic baseline excludes D−1 s through R+1 s by default; this guard is independent of video padding. Missing D/R leaves identified-baseline statistics unavailable.
+
+Select two stations to compare their shared absolute UTC baseline. Recordings without overlap are marked unavailable. The spatial-background budget is approximate and does not isolate detector read noise; definitions and assumptions are saved in `quality_report.json`.
+
+## Outputs and troubleshooting
+
+Each run creates a new directory. Animation runs save MP4, GIF and PNG previews. Configuration runs also save `resolved_config.json`, `media_metadata.json`, `run_metadata.json`, source snapshots, input hashes and quality reports. Desktop jobs retain `run.log` and `result.json`, with results in the `media` subfolder.
+
+| Problem | Check |
+| --- | --- |
+| Exposure not found | Original recording headers, matching CameraSettings, or the advanced override |
+| UTC mismatch | Observation date, start/midpoint convention and already-applied camera offsets |
+| PyOTE mode mismatch | Matching analysis curve and compatible result JSON |
+| Blank station image | Recording coverage and timestamp audit records |
+| Wrong target marker | Target column, original tracking CSV or advanced target X/Y |
+| Generation failed | The job's `run.log` and failed-run metadata |
+
+See [supported fields and UTC conventions](docs/native_station_media.md) for detailed timing, source formats and result-file requirements.
+
+## Run from source
+
+Use Python 3.13 with Tk support. In the project directory:
 
 ```bash
 python3 -m venv .venv
@@ -51,36 +100,17 @@ python -m pip install -e .
 python launch.py
 ```
 
-On Windows use `py -3.13 -m venv .venv`, then `.venv\Scripts\activate` instead of the first two commands. `python -m tkinter` checks whether Tk is available. The installation includes the FFmpeg dependency and bundled fonts. Keep observation files in your own event folder; no copying into this repository is required.
+On Windows, use `py -3.13 -m venv .venv` and `.venv\Scripts\activate` for the first two commands. Check Tk with `python -m tkinter`.
 
-### What counts as a supported PyOTE result?
+For a saved station configuration:
 
-`native_results.json` is the saved native-result schema used by our reduction workflow, **not an arbitrary PyOTE report, XLSX, log or screenshot**. The filename itself is not significant. Required JSON fields are `timesAreValid: true`, `Dframe`, `Rframe`, `Dtime`, `Rtime`; `mode` defaults to `raw` and must match `native_mode`. D/R mean disappearance/reappearance. Times are numeric seconds from UTC midnight; frames refer to the same curve. Optional `xlsxDict.Derr95/Rerr95` are retained as provenance. Both boundaries must fall within the curve and agree with their frame times. Do not fabricate a JSON from guessed values.
+```bash
+occultationvisualiser --media-config project.json
+occultationvisualiser --media-config project.json --verify-only
+occultationvisualiser --media-config project.json --quality-only
+```
 
-For independently reported boundaries, omit `pyote_result` and supply both `D_utc` and `R_utc` as full UTC ISO timestamps; optionally supply `timing_source_file`. Saved D/R is displayed without re-fitting or applying another half-exposure correction. D-only/R-only fits are not supported by this overlay.
-
-For saved C3/C4 products, point `curve` to `native_analysis.csv`, set the corresponding `native_mode`, and supply that mode's result JSON. Use the original `pymovie_native.csv` as `tracking_csv` if the analysis CSV lacks centroids. Tracking columns are `xcentroid-<target>`, `ycentroid-<target>` and optional `hit-defect-<target>`. Tracking and analysis frame/UTC identities must match exactly. No normalization or detrending is performed here.
-
-See [the full configuration and UTC contract](docs/native_station_media.md) for Tangra JSON inputs, acquisition corrections, byte order, partial FITS coverage and all fields.
-
-## 5. Find and check the results
-
-Each run gets a new output directory. Expect GIF, PNG preview and MP4 (unless disabled in the Tangra form), separately for requested languages. Configuration runs also save contact sheets, resolved configuration, source snapshot, input hashes and timestamp evidence in `media_metadata.json` / `run_metadata.json`. `--verify-only` writes audit products, not animations. Desktop jobs retain `run.log` and `result.json`; configuration media is inside their `media` subfolder.
-
-| Problem | What to check |
-| --- | --- |
-| File not found | Replace all template paths; check paths relative to the JSON location |
-| Missing column/header | Use the original supported CSV export, not a reformatted spreadsheet; check exact target name |
-| UTC/frame mismatch | First-sample date, exposure units, start/mid/end convention, source frame ID and known camera delay |
-| SER/FITS lacks UTC | Supply the original timed source; strict mode cannot invent timestamps |
-| Saved times invalid / wrong mode | Supply the matching saved fit or omit `pyote_result` |
-| Blank station image | Recording may not cover the selected UTC; inspect timestamp audit |
-| Target marker wrong | Correct X Y in the Tangra form, or provide matching native tracking columns |
-| Generation failed | Read `run.log` and failed run metadata before retrying |
-
-These products visualise recorded data; clock agreement does not independently establish clock accuracy or a formal timing measurement.
-
-## Development and builds
+## Development
 
 ```bash
 python -m unittest discover -s tests -v
@@ -88,4 +118,6 @@ python launch.py --self-test
 python -m pip install -e ".[build]"
 ```
 
-Run `Build-Windows.bat` or `Build-Mac.command` to test and build. Packaging alone: `python package_windows_only.py` on Windows, or `python -m PyInstaller --noconfirm --clean OccultationVisualiser.spec` on Mac. Release archives include this guide, its Chinese translation and editable JSON templates beside the application. GitHub Actions supports manual builds and release tags. See [THIRD_PARTY.md](THIRD_PARTY.md) for licenses.
+Run `Build-Windows.bat` or `Build-Mac.command` on the target platform. The Mac script builds for the running Python architecture (arm64 on M-series Macs). To explicitly build Intel, run `python3 build_tools/create_macos_env.py --architecture x86_64` with a universal2 Python. Apple Silicon builds compile the included, pinned ADVCore source and include its MPL notice; ADV2 support is native too. Source-only ARM runs can use `python build_tools/prepare_adv_bundle.py` followed by `PYTHONPATH=build_vendor python launch.py`. The supported build runtime is Python 3.13 with Tcl/Tk 8.6; the drag-and-drop dependency is pinned to its compatible version. Release tags trigger Windows/macOS packaging and frozen-app self-tests through GitHub Actions. Archives include both user guides, example configurations and artwork.
+
+See [CHANGELOG.md](CHANGELOG.md) for releases and [THIRD_PARTY.md](THIRD_PARTY.md) for dependency licenses. The previous `occultation-media` commands and Python import `occultation_media` remain compatible.

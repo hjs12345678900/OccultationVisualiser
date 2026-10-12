@@ -11,7 +11,8 @@ Standalone packages include the runtime, fonts and video encoder. Python, Tangra
 | Platform | Start |
 | --- | --- |
 | Windows 10/11 x64 | Extract the whole Windows ZIP, then open `OccultationVisualiser.exe`. Keep the `_internal` folder beside it. |
-| macOS 14+ | Extract the macOS ZIP and open `OccultationVisualiser.app`. The build targets Intel; Apple Silicon requires Rosetta. |
+| macOS 14+, Apple Silicon (M series) | Download `OccultationVisualiser-macOS-Apple-Silicon.zip`, extract it and open `OccultationVisualiser.app`. Runs natively; Rosetta is not required. |
+| macOS 14+, Intel | Download `OccultationVisualiser-macOS-Intel.zip`, extract it and open `OccultationVisualiser.app`. |
 
 The macOS package is not Apple-notarized.
 
@@ -117,6 +118,6 @@ python launch.py --self-test
 python -m pip install -e ".[build]"
 ```
 
-Run `Build-Windows.bat` or `Build-Mac.command` on the target platform. Release tags trigger Windows/macOS packaging and frozen-app self-tests through GitHub Actions. Archives include both user guides, example configurations and artwork.
+Run `Build-Windows.bat` or `Build-Mac.command` on the target platform. The Mac script builds for the running Python architecture (arm64 on M-series Macs). To explicitly build Intel, run `python3 build_tools/create_macos_env.py --architecture x86_64` with a universal2 Python. Apple Silicon builds compile the included, pinned ADVCore source and include its MPL notice; ADV2 support is native too. Source-only ARM runs can use `python build_tools/prepare_adv_bundle.py` followed by `PYTHONPATH=build_vendor python launch.py`. The supported build runtime is Python 3.13 with Tcl/Tk 8.6; the drag-and-drop dependency is pinned to its compatible version. Release tags trigger Windows/macOS packaging and frozen-app self-tests through GitHub Actions. Archives include both user guides, example configurations and artwork.
 
 See [CHANGELOG.md](CHANGELOG.md) for releases and [THIRD_PARTY.md](THIRD_PARTY.md) for dependency licenses. The previous `occultation-media` commands and Python import `occultation_media` remain compatible.

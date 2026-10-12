@@ -24,19 +24,28 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-15-intel]
+        include:
+          - os: windows-latest
+            architecture: x64
+            name: Windows-x64
+          - os: macos-15-intel
+            architecture: x64
+            name: macOS-Intel
+          - os: macos-15
+            architecture: arm64
+            name: macOS-Apple-Silicon
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-          architecture: x64
+          architecture: ${{ matrix.architecture }}
       - run: python -m pip install -e ".[build]"
       - run: python build_tools/build.py
       - uses: actions/upload-artifact@v4
         with:
-          name: OccultationVisualiser-${{ matrix.os }}
+          name: OccultationVisualiser-${{ matrix.name }}
           path: |
             dist/*.zip
             dist/package-self-test.json
@@ -45,6 +54,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          PACKAGE_NAME: ${{ matrix.name }}
         run: |
-          cp dist/package-self-test.json "dist/package-self-test-${RUNNER_OS}.json"
-          gh release upload "$GITHUB_REF_NAME" dist/*.zip "dist/package-self-test-${RUNNER_OS}.json"
+          cp dist/package-self-test.json "dist/package-self-test-${PACKAGE_NAME}.json"
+          gh release upload "$GITHUB_REF_NAME" dist/*.zip "dist/package-self-test-${PACKAGE_NAME}.json"

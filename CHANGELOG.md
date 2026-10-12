@@ -1,3 +1,10 @@
+# 1.11.0
+
+- Add a native Apple Silicon macOS package alongside Intel macOS and Windows x64. Rosetta is not needed for the Apple Silicon package, including ADV2 decoding.
+- Build ARM ADVCore from a checksum-pinned, unmodified source archive with its MPL notice; keep build dependencies private to the project.
+- Pin drag-and-drop to the Tcl/Tk 8.6-compatible release and smoke-test the frozen Mac GUI. Build-Mac.command defaults to the current interpreter architecture.
+- Verify exact synthetic ADV pixels, exposure and nanosecond UTC in all frozen packages; give release reports unique platform/architecture names.
+
 # 1.10.0
 
 - Add a custom asteroid-occultation cover and coordinated transparent application icon, with original imagegen prompts and asset hashes.

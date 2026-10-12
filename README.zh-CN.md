@@ -11,7 +11,8 @@ OccultationVisualiser 将已有的小行星掩星光变曲线与观测星场同�
 | 平台 | 启动方式 |
 | --- | --- |
 | Windows 10/11 x64 | 完整解压 Windows ZIP，打开 `OccultationVisualiser.exe`；保留旁边的 `_internal` 文件夹。 |
-| macOS 14+ | 解压 macOS ZIP，打开 `OccultationVisualiser.app`。当前构建面向 Intel，Apple Silicon 需要 Rosetta。 |
+| macOS 14+，Apple Silicon（M 系列） | 下载 `OccultationVisualiser-macOS-Apple-Silicon.zip`，解压后打开 `OccultationVisualiser.app`。原生运行，无需 Rosetta。 |
+| macOS 14+，Intel | 下载 `OccultationVisualiser-macOS-Intel.zip`，解压后打开 `OccultationVisualiser.app`。 |
 
 macOS 软件包未进行 Apple 公证。
 
@@ -117,6 +118,6 @@ python launch.py --self-test
 python -m pip install -e ".[build]"
 ```
 
-在目标平台运行 `Build-Windows.bat` 或 `Build-Mac.command`。版本标签通过 GitHub Actions 构建 Windows/macOS 包并执行独立应用自测。压缩包附带中英文说明、示例配置及视觉素材。
+在目标平台运行 `Build-Windows.bat` 或 `Build-Mac.command`。Mac 脚本按当前 Python 的架构构建，M 系列使用 arm64；如需 Intel 版，可用 universal2 Python 执行 `python3 build_tools/create_macos_env.py --architecture x86_64`。Apple Silicon 版从随包保留的固定版本 ADVCore 源码编译解码库，同时附带 MPL 许可，ADV2 读取也原生运行。直接运行 ARM 源码时，可先执行 `python build_tools/prepare_adv_bundle.py`，再用 `PYTHONPATH=build_vendor python launch.py` 启动。支持的打包环境为 Python 3.13、Tcl/Tk 8.6，拖放依赖固定为兼容版本。版本标签通过 GitHub Actions 构建 Windows/macOS 包并执行独立应用自测。压缩包附带中英文说明、示例配置及视觉素材。
 
 版本记录见 [CHANGELOG.md](CHANGELOG.md)，依赖许可证见 [THIRD_PARTY.md](THIRD_PARTY.md)。旧 `occultation-media` 命令和 Python 导入名 `occultation_media` 保留兼容。

@@ -1,0 +1,4 @@
+# v1.11.0
+
+- TASK-0029: Integrate pinned ADVCore ARM compilation, Tcl/Tk 8.6-compatible TkDND, three-platform CI and architecture-selectable local builds. Complete. All 49 tests pass in native arm64 Python; frozen GUI startup, bilingual GIF/PNG/MP4, SER/FITS/RAVF and exact synthetic ADV pixels/UTC/exposure pass. Executable, ADV library and FFmpeg inspected as arm64.
+- TASK-0030: Compare all 398 Altona Unimelb 1 ADV frames through frozen arm64 and Intel v1.10 workers: identical pixels and native UTC/exposure ns; source hash unchanged. Frozen four-station verification preserves 524/524 Unimelb 2, 391/391 Unimelb 1, 646/723 Peter and 233/233 Paine matches; absent Peter exposures remain absent. Local evidence saved under dist/adv-Altona-arm64-vs-Intel.json and outputs/apple_silicon_altona_verification. GitHub three-platform release validation pending.

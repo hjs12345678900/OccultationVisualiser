@@ -1,6 +1,6 @@
 """Isolated ADV2 decoder using only stdlib plus Adv2's ctypes wrapper.
 
-An Intel Python can run this worker under Rosetta without importing ARM NumPy.
+The worker uses the packaged native library without importing NumPy.
 Writes little-endian uint32 detector arrays and native exposure midpoint ns.
 """
 import json

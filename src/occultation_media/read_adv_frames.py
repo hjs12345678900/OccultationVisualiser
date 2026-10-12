@@ -12,7 +12,7 @@ from .platform_runtime import hidden_process_options
 
 
 class AdvSource:
-    """Read ADV2 using an isolated Python, with automatic macOS Intel fallback.
+    """Read ADV2 with an isolated native worker and optional source-only fallback.
 
     `python` optionally names a compatible executable. The worker reads only
     requested zero-based main-stream indices; raw temporary files are deleted.
@@ -20,7 +20,7 @@ class AdvSource:
     def __init__(self, path, python=None):
         self.path = Path(path).resolve()
         candidates = [python] if python else [sys.executable]
-        if not python and platform.system() == 'Darwin' and platform.machine() == 'arm64':
+        if not python and not getattr(sys,'frozen',False) and platform.system() == 'Darwin' and platform.machine() == 'arm64':
             candidates += [str(p) for p in (Path('/usr/local/bin/python3-intel64'),) if p.exists()]
         self.env = dict(os.environ)
         spec = importlib.util.find_spec('Adv2')
@@ -36,7 +36,7 @@ class AdvSource:
                 return
             except RuntimeError as error:
                 errors.append(str(error))
-        raise RuntimeError('ADV decoder unavailable. Install Adv2 and, on Apple Silicon, Rosetta plus Intel Python; pass --adv-python if needed.\n'+'\n'.join(errors))
+        raise RuntimeError('ADV decoder unavailable. Use the matching native desktop package, or build the native Adv2 dependency for source runs; --adv-python accepts an explicit compatible worker.\n'+'\n'.join(errors))
 
     def _decode(self, indices, output_dir):
         request = {'source':str(self.path),'indices':indices,'output_dir':output_dir}

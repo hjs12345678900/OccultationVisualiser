@@ -5,7 +5,7 @@ Only debayer helpers need OpenCV; this application's raw-frame path never calls
 those helpers. The source install can still use OpenCV, while the frozen app
 excludes it. Preserve the upstream distribution and license in the bundle.
 """
-from importlib.util import find_spec
+from importlib import metadata
 from pathlib import Path
 import ast
 import shutil
@@ -13,7 +13,7 @@ import shutil
 
 def prepare(root):
     """Return staging import root after checking and deferring cv2 imports."""
-    source = Path(find_spec('ravf').origin).parent
+    source = Path(metadata.distribution('ravf').locate_file('ravf'))
     vendor = root / 'build_vendor'
     target = vendor / 'ravf'
     shutil.copytree(source, target, dirs_exist_ok=True,
