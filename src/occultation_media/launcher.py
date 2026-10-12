@@ -36,8 +36,8 @@ def main():
             with contextlib.redirect_stdout(log),contextlib.redirect_stderr(log):
                 try:
                     print('Reading observation and generating synchronized media…',flush=True)
-                    generate_job(config['argv'])
-                    result.write_text(json.dumps({'ok':True}),encoding='utf-8')
+                    output=generate_job(config['argv'])
+                    result.write_text(json.dumps({'ok':True,'output':str(output) if output else None}),encoding='utf-8')
                 except BaseException as error:
                     traceback.print_exc()
                     result.write_text(json.dumps({'ok':False,'error':str(error)}),encoding='utf-8')

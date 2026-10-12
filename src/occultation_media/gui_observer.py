@@ -29,7 +29,7 @@ DEFAULTS=dict(name='Observer',mode='PyMovie / PyOTE',curve='',source='',pyote_re
               tracking_csv='',exposure_ms='',target_column='signal-target',source_first_frame='0',
               predicted_utc='',native_mode='raw',mapping_tolerance_s='0.001',source_minus_curve_s='0',
               ser_byte_order='header',D_utc='',R_utc='',target_xy='',fits_hdu='',timing_source_file='',adv_python='',
-              latitude_deg='',longitude_deg='',altitude_m='')
+              latitude_deg='',longitude_deg='',altitude_m='',camera_settings_file='')
 
 
 class ObserverDialog:
@@ -63,7 +63,8 @@ class ObserverDialog:
         self.field(advanced,6,'ser_byte_order','SER 字节序',('header','little','big'))
         path_entry(advanced,self.values['timing_source_file'],7,'定时来源报告（可选）')
         path_entry(advanced,self.values['adv_python'],8,'ADV 解码 Python（可选）')
-        ttk.Label(advanced,text='容差用于导出舍入精度；请勿用它掩盖未知时间偏移。',wraplength=600).grid(row=9,column=0,columnspan=4,pady=8)
+        path_entry(advanced,self.values['camera_settings_file'],9,'CameraSettings（可选）')
+        ttk.Label(advanced,text='容差用于导出舍入精度；请勿用它掩盖未知时间偏移。',wraplength=600).grid(row=10,column=0,columnspan=4,pady=8)
         buttons=ttk.Frame(self.window);buttons.pack(fill='x',padx=12,pady=10)
         ttk.Button(buttons,text='取消 Cancel',command=self.window.destroy).pack(side='right')
         ttk.Button(buttons,text='保存 Observer',command=self.save).pack(side='right',padx=8)

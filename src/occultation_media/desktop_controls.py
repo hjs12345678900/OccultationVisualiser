@@ -22,6 +22,7 @@ class JobControls:
 
     def begin_poll(self):
         self.generate.config(state='disabled');self.config_generate.config(state='disabled')
+        self.quality.config(state='disabled')
         self.cancel.config(state='normal');self.reveal.config(state='normal')
         self.progress.start();self.set_status('running');self.poll()
 
@@ -32,12 +33,15 @@ class JobControls:
             self.log.insert('end',log.read_text(encoding='utf-8',errors='replace')[-12000:]);self.log.see('end');self.log.config(state='disabled')
         if self.process.poll() is None:self.root.after(500,self.poll);return
         self.progress.stop();self.generate.config(state='normal');self.config_generate.config(state='normal');self.cancel.config(state='disabled')
+        self.quality.config(state='normal')
         result=self.output/'result.json'
         if result.exists():
             data=json.loads(result.read_text(encoding='utf-8'))
             self.set_status('done' if data['ok'] else 'failed')
             if data['ok'] and getattr(self,'verify_only',False):
                 self.status.set('核验完成（未生成动画） / Verification complete (no animation)')
+            if data['ok'] and getattr(self,'quality_only',False):
+                self.status.set('噪声诊断完成 / Noise diagnostics complete');self.show_quality()
         else:self.set_status('ended')
 
     def stop(self):

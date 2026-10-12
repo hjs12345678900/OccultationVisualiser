@@ -34,7 +34,7 @@ def full_utc(date, value):
     return str(utc_ns(value))
 
 
-def build_config(event, observers):
+def build_config(event, observers, quality_only=False):
     """Return JSON-safe configuration from shared fields and observer dicts.
 
     Exposure inputs are milliseconds, offsets/tolerances seconds, coordinates
@@ -53,13 +53,13 @@ def build_config(event, observers):
     if isinstance(skip,str):
         if skip not in ('跳过','保留'): raise ValueError('Choose skip or keep gaps')
         skip=skip=='跳过'
-    start, stop = ((full_utc(date,event[k]) for k in ('start_utc','end_utc')) if window=='manual' else ('',''))
+    start, stop = ((full_utc(date,event[k]) for k in ('start_utc','end_utc')) if window=='manual' and not quality_only else ('',''))
     step = number(event,'step_s')
     import numpy as np
     if window not in ('manual','dr') or playback not in ('real_time','fixed_duration'):
         raise ValueError('Choose window and playback mode')
-    if step < .01 or (window=='manual' and utc_ns(stop)<=utc_ns(start)): raise ValueError('Check UTC window and display step')
-    if window=='manual' and not skip:
+    if step < .01 or (window=='manual' and not quality_only and utc_ns(stop)<=utc_ns(start)): raise ValueError('Check UTC window and display step')
+    if window=='manual' and not skip and not quality_only:
         count = int((utc_ns(stop)-utc_ns(start))/np.timedelta64(1,'ns'))//round(step*1e9)+1
         if not 2<=count<=2000: raise ValueError('Choose 2–2000 displayed frames / 调整时间范围或显示间隔')
     if not event['output_root'].strip(): raise ValueError('Choose output folder / 请选择输出目录')
@@ -75,14 +75,16 @@ def build_config(event, observers):
     for obs in observers:
         station = dict(name=obs['name'].strip(),native_mode=obs.get('native_mode','raw'))
         if not station['name']: raise ValueError('Observer name required / 请填写观测者姓名')
-        for key in ('curve','source','pyote_result','tracking_csv','timing_source_file','adv_python'):
+        for key in ('curve','source','pyote_result','tracking_csv','timing_source_file','adv_python','camera_settings_file'):
             if obs.get(key,'').strip():
                 path=Path(obs[key]).expanduser().resolve()
                 if not path.exists(): raise ValueError(f'{station["name"]}: file not found: {path}')
                 station[key]=str(path)
-        if not all(k in station for k in ('curve','source')): raise ValueError('Choose curve and source / 请选择曲线及影像')
+        required=('curve',) if quality_only else ('curve','source')
+        if not all(k in station for k in required): raise ValueError('Choose curve and source / 请选择曲线及影像')
         kind = 'tangra_lc' if Path(station['curve']).suffix.lower()=='.lc' else ('tangra_csv' if obs['mode']=='Tangra' else 'pymovie_csv')
-        suffix = Path(station['source']).suffix.lower()
+        source_path=Path(station.get('source',station['curve']))
+        suffix = source_path.suffix.lower()
         station.update(curve_format=kind,exposure_s=number(obs,'exposure_ms')/1000,
                        target_column=obs.get('target_column','signal-target').strip(),
                        source_first_frame=int(obs.get('source_first_frame','0')),
@@ -91,9 +93,9 @@ def build_config(event, observers):
                        mapping_tolerance_s=number(obs,'mapping_tolerance_s',.001),
                        source_minus_curve_s=number(obs,'source_minus_curve_s',0),
                        ser_byte_order=obs.get('ser_byte_order','header'))
-        if kind=='pymovie_csv' and (Path(station['source']).is_dir() or suffix in ('.fits','.fit','.fts')):
+        if kind=='pymovie_csv' and (source_path.is_dir() or suffix in ('.fits','.fit','.fts')):
             from astropy.io import fits
-            source=Path(station['source'])
+            source=source_path
             files=sorted(p for p in source.iterdir() if p.suffix.lower() in ('.fits','.fit','.fts')) if source.is_dir() else [source]
             if files:
                 header=fits.getheader(files[0],int(obs.get('fits_hdu') or 0))
@@ -110,7 +112,7 @@ def build_config(event, observers):
         if obs.get('fits_hdu','').strip(): station['fits_hdu']=int(obs['fits_hdu'])
         for key in ('latitude_deg','longitude_deg','altitude_m'):
             if str(obs.get(key,'')).strip(): station[key]=number(obs,key)
-        if window=='dr' and 'pyote_result' not in station and 'D_utc' not in station:
+        if window=='dr' and not quality_only and 'pyote_result' not in station and 'D_utc' not in station:
             raise ValueError(f'{station["name"]}: D/R window requires PyOTE results or D/R')
         cfg['stations'].append(station)
     from .plan_station_timeline import order_stations

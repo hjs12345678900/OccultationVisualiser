@@ -1,3 +1,10 @@
+# 1.8.0
+
+- Add desktop Noise diagnostics and View report actions, with curve-only runs and immutable JSON/CSV output.
+- Keep saved SNR separate from whole-exposure guarded baseline statistics; compare stations on shared absolute UTC, excluding both D/R windows. Display unavailable comparisons when recordings do not overlap.
+- Show capture camera/binning/exposure evidence, raw/linear-residual/adjacent-difference scatter, PyMovie default-mask statistics and approximate spatial-background pixel budgets. Do not infer isolated read noise or camera performance.
+- Include quality reports in normal configuration generation and verification, and exercise the new pipeline in frozen-package self-tests.
+
 # 1.7.0
 
 - Display baseline per-exposure SNR beside each station's coordinates, using saved PyOTE B/sigmaB when available.

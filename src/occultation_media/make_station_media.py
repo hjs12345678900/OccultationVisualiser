@@ -25,7 +25,7 @@ def load_config(path):
     if cfg.get('alignment') != 'absolute_utc' or not 1 <= len(cfg.get('stations',[])) <= 8:
         raise ValueError('Require one to eight stations and alignment=absolute_utc')
     for values in [cfg, *cfg['stations']]:
-        for key in ('curve','source','output_root','pyote_result','tracking_csv','timing_source_file','coordinate_source_file','source_manifest','snr_source_file','adv_python'):
+        for key in ('curve','source','output_root','pyote_result','tracking_csv','timing_source_file','coordinate_source_file','source_manifest','snr_source_file','adv_python','camera_settings_file'):
             if values.get(key):
                 file = Path(values[key]).expanduser()
                 values[key] = str((path.parent/file).resolve() if not file.is_absolute() else file.resolve())
@@ -76,6 +76,8 @@ def make_station_media(config_path, output_dir=None, verify_only=False):
         stations = order_stations(stations, cfg.get('station_order', 'input'))
         coverage = [s['coverage'] for s in stations]
         cfg['stations'] = [s['config'] for s in stations]
+        from .run_quality_diagnostics import save_quality_report
+        paths += save_quality_report(out,stations,float(cfg.get('diagnostic_margin_s',1)))
         timeline, holds, intervals, plan = plan_timeline(cfg, stations)
         start, stop = intervals[0][0], intervals[-1][1]
         write_json(out/'resolved_config.json', cfg)

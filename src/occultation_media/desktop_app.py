@@ -46,6 +46,8 @@ class App(JobControls):
         row=ttk.Frame(observers);row.pack(fill='x',pady=6)
         for label,action in [('添加 Add',self.add_observer),('编辑 Edit',self.edit_observer),('删除 Delete',self.delete_observer)]:
             ttk.Button(row,text=label,command=action).pack(side='left',padx=3)
+        self.quality=ttk.Button(row,text='噪声诊断 Quality',command=lambda:self.start(quality_only=True));self.quality.pack(side='left',padx=8)
+        ttk.Button(row,text='查看诊断 View report',command=self.show_quality).pack(side='left')
         ttk.Label(body,text=TIMING_NOTE,wraplength=1030).pack(anchor='w',pady=8)
         actions=ttk.Frame(body);actions.pack(fill='x',pady=5)
         self.generate=ttk.Button(actions,text='生成 Generate',command=self.start);self.generate.pack(side='left')
@@ -105,18 +107,31 @@ class App(JobControls):
             self.observers=observers;self.refresh()
         except Exception as e:messagebox.showerror('Open project',str(e))
 
-    def start(self,verify_only=False):
+    def start(self,verify_only=False,quality_only=False):
         try:
             self.verify_only=verify_only
-            cfg=build_config({k:v.get() for k,v in self.fields.items()},self.observers)
+            self.quality_only=quality_only
+            cfg=build_config({k:v.get() for k,v in self.fields.items()},self.observers,quality_only)
             self.output=Path(cfg['output_root'])/datetime.now(timezone.utc).strftime('occultation_%Y%m%d_%H%M%S_%f')
             self.output.mkdir(parents=True)
             config=self.output/'config.json';config.write_text(json.dumps(cfg,ensure_ascii=False,indent=2),encoding='utf-8')
             argv=['--media-config',str(config),'--output-dir',str(self.output/'media')]
             if verify_only:argv.append('--verify-only')
+            if quality_only:argv.append('--quality-only')
             self.process=start_job(argv,self.output)
         except Exception as e:messagebox.showerror('检查输入 / Check inputs',str(e));return
         self.begin_poll()
+
+    def show_quality(self):
+        path=self.output/'media/quality_report.json' if self.output else None
+        if path is None or not path.exists():
+            chosen=filedialog.askopenfilename(title='选择 quality_report.json',filetypes=[('Quality report','*.json')])
+            if not chosen:return
+            path=Path(chosen)
+        try:
+            from .gui_quality import QualityDialog
+            QualityDialog(self.root,path)
+        except Exception as exc:messagebox.showerror('Noise diagnostics',str(exc))
 
 
 def run(smoke=False):

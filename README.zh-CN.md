@@ -6,7 +6,7 @@
 
 原名 **OccultationMedia**。新构建使用 `OccultationVisualiser.app` / `OccultationVisualiser.exe` 和 `occultationvisualiser` 命令；旧 `occultation-media` 命令及 Python 导入名 `occultation_media` 保留兼容。GitHub 仓库已改名为 OccultationVisualiser；现有本地目录可以保留旧名称。
 
-## GUI 快速开始（v1.7）
+## GUI 快速开始（v1.8）
 
 所有输入都可以在窗口内完成，无需手写 JSON。
 
@@ -21,6 +21,12 @@
 视频设置可选择 **跳过 / 保留**站点间空档，及 **真实时间 / 指定时长**。D/R 模式需要每站的 PyOTE 结果或可靠的 D/R。跳过空档会在光变横轴标出 `//`，画面 UTC 跳到下一段；各站原始时标与 D/R 不变，保留段内缺图仍显示“无画面”。指定时长以秒填写，仅改变播放速度；MP4 按 25 fps 取整（最多 20 ms 时长差），GIF 按厘秒显示。旧 GUI 项目以手动窗口、原输入顺序打开。
 
 每站坐标旁自动显示基线单帧 **SNR = B / σB**。优先读取保存的 PyOTE 基线参数；否则直接使用完整掩食外曝光的保存计数计算。Tangra LC 显示“LC 基线”，其他曲线的回退估计标注“估算”。采用整条保存曲线，不随视频裁剪范围改变；不重新拟合 D/R，也不把噪声除以 √N。[SNR 定义与来源记录](docs/native_station_media.md#baseline-snr-labels)。
+
+点击 **噪声诊断 Quality**，可查看各站 SNR、曝光、binning、相机和测光参数，并选择两站，在共同绝对 UTC 时段对照基线散点。此操作只需曲线及曝光时标约定；影像源和手动视频起止时间可留空。需要保存或输入 D/R 才能识别掩食外基线；缺失时显示不可用。**查看诊断 View report** 可重开 `quality_report.json`。保存的 SNR 与另算的保护区基线 SNR 分开展示；诊断默认排除 D 前 1 秒至 R 后 1 秒，与视频裁剪的 10 秒设置独立。两站对比排除双方事件，并只取完整曝光；没有共同录制时段就显示无法比较。
+
+相机、binning、gain 来自导出头部及邻近 `CameraSettings.txt`；也可在 Advanced 指定该文件。线性残差与相邻差分散布仅用于诊断，不替换原始曲线/SNR。PyMovie 背景散布可估算 `σpixel × √Nmask`，假设像素独立且背景有代表性；它包含天空与探测器噪声，不能单独当成读出噪声，也未计源泊松噪声和背景估计误差。C3/C4 禁用原始像素预算。JSON/CSV 保存指标定义、选中帧号及来源哈希；正常 Generate/Verify 也会附带诊断。
+
+命令行：`occultationvisualiser --media-config project.json --quality-only`；JSON 可用 `diagnostic_margin_s` 调整诊断保护区。此模式只读保存曲线，不核验原始影像时间戳；该核验使用 Verify。
 
 ### 时间戳约定
 

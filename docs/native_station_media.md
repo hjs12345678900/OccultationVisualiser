@@ -47,6 +47,7 @@ Each station supplies:
 | `ser_byte_order` | `header` (specification), `little`, or `big`; use a documented override for nonconforming writers |
 | `pyote_result` | Optional saved `native_results.json`; D/R validity, mode, frame identity and UTC agreement are checked |
 | `native_mode` | `raw` (default), `C3` or `C4`, matching the saved PyOTE result |
+| `camera_settings_file` | Optional capture-settings text file; otherwise detect a nearby `.CameraSettings.txt` |
 | `tracking_csv` | Optional original native CSV for coordinates/defect flags when normalized exports omit them; every frame and UTC must match |
 | `tracking_target_column` | Tracking CSV's target column, defaults to `target_column` |
 | `D_utc/R_utc` | Optional pair of supplied observation UTC boundaries when no native fit is supplied |

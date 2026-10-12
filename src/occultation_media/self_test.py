@@ -75,10 +75,16 @@ def run():
         record=json.loads((root/'native_media/run_metadata.json').read_text())
         if not record['input_integrity_verified']:raise AssertionError('Native input integrity failed')
         meta=json.loads((root/'native_media/media_metadata.json').read_text())
+        if not (root/'native_media/quality_report.json').is_file():raise AssertionError('Missing automatic quality report')
+        from .station_cli import main as station_cli
+        with contextlib.redirect_stdout(io.StringIO()):
+            station_cli([str(config),'--quality-only','--output-dir',str(root/'quality_only')])
+        quality=json.loads((root/'quality_only/quality_report.json').read_text())
+        if quality['stations'][0]['baseline']['available']:raise AssertionError('Baseline needs saved D/R')
         if meta['stations'][0]['residual_max_s']!=0:raise AssertionError('Native source/curve UTC differs')
         for lang in ('en','zh'):
             with Image.open(meta['outputs'][lang]['gif']) as image:
                 if image.n_frames!=6:raise AssertionError('Native GIF elapsed timeline differs')
     return {'ok':True,'system':platform.system(),'architecture':platform.machine(),
             'exports':['SER','FITS','RAVF','native PyMovie SER'],'languages':['en','zh'],'outputs':['GIF','PNG','MP4'],
-            'ffmpeg':ffmpeg_executable(),'adv':'Requires separate real-observation smoke test'}
+            'noise_diagnostics':True,'ffmpeg':ffmpeg_executable(),'adv':'Requires separate real-observation smoke test'}

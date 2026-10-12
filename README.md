@@ -6,7 +6,7 @@ Turn an occultation observation into a synchronized star-field and light-curve a
 
 Previously **OccultationMedia**. New builds use `OccultationVisualiser.app` / `OccultationVisualiser.exe` and the `occultationvisualiser` command. The Python import `occultation_media` and old `occultation-media` commands remain compatible. The GitHub repository is now OccultationVisualiser; existing local checkouts may retain the old folder name.
 
-## GUI quick start (v1.7)
+## GUI quick start (v1.8)
 
 All inputs are available in the desktop window; writing JSON is not required.
 
@@ -21,6 +21,12 @@ All inputs are available in the desktop window; writing JSON is not required.
 Choose **skip / keep gaps** and **real time / fixed duration** in the video settings. D/R windows require saved PyOTE results or supplied boundaries for every observer. Skipped gaps have `//` plot-axis marks and an absolute UTC clock jump. Source clocks and D/R remain unchanged; missing images inside retained windows stay blank. Fixed duration changes playback speed only; H.264 uses 25 fps (nearest 40 ms total duration), GIF uses centiseconds. Old GUI projects open in manual/input-order mode.
 
 Station headers automatically show baseline per-exposure SNR (`B / sigmaB`). Saved PyOTE baseline parameters are preferred; otherwise calculate directly from valid saved exposures wholly outside supplied D/R. Tangra LC values are labelled `(LC baseline)`; other fallback curves are labelled as estimated. The statistic uses the full saved curve and is independent of video cuts. See [SNR definitions and provenance](docs/native_station_media.md#baseline-snr-labels).
+
+**Noise diagnostics** opens a station table, capture/photometry details and a selectable station-pair scatter plot on shared UTC. This action needs curves and exposure conventions, with saved or supplied D/R to identify baselines; image sources and manual media start/end times are optional. **View report** reopens an existing `quality_report.json`. Saved-fit SNR and the separately calculated guarded baseline SNR are labelled separately. The diagnostic guard defaults to one second on either side of D/R, independent of video padding. Pair comparisons exclude both events and retain whole exposures within shared recording coverage; recordings without overlap are explicitly unavailable.
+
+Camera/binning/gain metadata come from saved headers and nearby `CameraSettings.txt`, or a file selected in Advanced. Linear residual and adjacent-difference scatter are diagnostic statistics; they do not replace original counts or saved SNR. PyMovie spatial-background noise permits an approximate `sigma_pixel*sqrt(N_mask)` budget, assuming independent representative pixels. It is not isolated read noise and omits source shot noise and background-estimator uncertainty. C3/C4 count scaling disables the raw-pixel budget. Full definitions, selected frames and source hashes are saved with JSON/CSV; normal Generate/Verify also includes the report.
+
+CLI: `occultationvisualiser --media-config project.json --quality-only`. Optional JSON `diagnostic_margin_s` adjusts the baseline guard; this mode does not audit source-image timestamps. Use Verify for that audit.
 
 ### Timestamp policy
 
