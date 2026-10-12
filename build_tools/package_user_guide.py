@@ -12,7 +12,7 @@ def copy_user_guide(root, destination):
     """
     destination = Path(destination)
     destination.mkdir(parents=True, exist_ok=True)
-    for name in ('README.md', 'README.zh-CN.md', 'THIRD_PARTY.md'):
+    for name in ('README.md', 'README.zh-CN.md', 'CHANGELOG.md', 'THIRD_PARTY.md'):
         shutil.copy2(root / name, destination / name)
         if name.startswith('README'):
             guide=destination/name
