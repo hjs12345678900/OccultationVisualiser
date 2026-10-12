@@ -47,12 +47,12 @@ class UtcAxis:
             time=np.datetime64((seconds//tick+1)*tick,'s').astype('datetime64[ns]')
             while time<b:
                 px=self.position(time)
-                draw.line((px,y+52,px,y+244),fill=(32,45,67))
+                draw.line((px,y+68,px,y+244),fill=(32,45,67))
                 draw.text((px,y+253),format_clock(time)[:8],font=font,fill=(189,200,217),anchor='mt')
                 time+=np.timedelta64(tick,'s')
         for previous,following in zip(self.segments,self.segments[1:]):
             center=(previous[3]+following[2])/2
-            draw.rectangle((previous[3]+2,y+50,following[2]-2,y+246),fill=(9,13,22))
+            draw.rectangle((previous[3]+2,y+66,following[2]-2,y+246),fill=(9,13,22))
             for offset in (-4,3):
                 draw.line((center+offset-3,y+249,center+offset+3,y+239),fill=(249,236,181),width=2)
 

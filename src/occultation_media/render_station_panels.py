@@ -56,7 +56,7 @@ class StationPanels:
                 py = self.sy(k,value)
                 draw.line((116,py,898,py),fill=(32,45,67))
                 draw.text((103,py),format_counts(value),font=self.small,fill=(189,200,217),anchor='rm')
-            draw.rectangle((116,y+52,898,y+244),outline=(64,79,103),width=2)
+            draw.rectangle((116,y+68,898,y+244),outline=(64,79,103),width=2)
             self.axis.draw(draw,y,self.small,clock)
         step=context['step_s']
         plan=context.get('timeline_plan',{})
@@ -72,7 +72,7 @@ class StationPanels:
 
     def sy(self,k,counts):
         lo,hi = self.stations[k]['plot_limits']
-        return 105+k*305+244-(counts-lo)/(hi-lo)*192
+        return 105+k*305+244-(counts-lo)/(hi-lo)*176
 
     def render(self,utc,indices):
         """Return a RGB canvas; each image retains its own recorded UTC label."""
@@ -84,18 +84,18 @@ class StationPanels:
             d,r = station['D'],station['R']
             if d is not None and utc>=d:
                 for x1,x2 in self.axis.spans(d,min(utc,r)):
-                    draw.rectangle((x1,y+52,x2,y+244),fill=(255,73,98,32))
+                    draw.rectangle((x1,y+68,x2,y+244),fill=(255,73,98,32))
                 for boundary in (d,r):
                     px=self.sx(boundary)
                     if px is not None and boundary<=utc:
-                        draw.line((px,y+52,px,y+244),fill=(255,73,98),width=2)
+                        draw.line((px,y+68,px,y+244),fill=(255,73,98),width=2)
                 note=f'D {clock(d)}'
                 if utc>=r: note+=f' · R {clock(r)}'
                 draw.text((898,y+13),note+' UTC',font=self.small,fill=(219,163,170),anchor='ra')
             predicted = station['config'].get('predicted_utc')
             if predicted and self.sx(np.datetime64(predicted,'ns')) is not None:
                 px = self.sx(np.datetime64(predicted,'ns'))
-                draw.line((px,y+52,px,y+244),fill=(117,170,224),width=2)
+                draw.line((px,y+68,px,y+244),fill=(117,170,224),width=2)
             previous=None
             for row in rows:
                 if row.utc>utc: break
@@ -108,7 +108,7 @@ class StationPanels:
                 draw.ellipse((point[0]-2,point[1]-2,point[0]+2,point[1]+2),fill=COLORS[k % len(COLORS)])
                 previous=point;previous_segment=segment
             px = self.sx(utc)
-            draw.line((px,y+52,px,y+244),fill=(249,236,181,120),width=2)
+            draw.line((px,y+68,px,y+244),fill=(249,236,181,120),width=2)
             field = station['frames']
             if index is None or index not in field.prepared:
                 msg='无画面：此 UTC 没有对应原始帧' if self.language=='zh' else 'No image at this UTC'

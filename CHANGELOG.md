@@ -1,3 +1,7 @@
+# 1.6.1
+
+- Reserve a separate coordinate header above each plot so latitude/longitude cannot overlap its top ADU tick.
+
 # 1.6.0
 
 - Configure per-station D/R windows with the selected seconds before D and after R, or use manual UTC limits.

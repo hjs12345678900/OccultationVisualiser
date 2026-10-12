@@ -15,3 +15,5 @@
 - [v1.5.0 p001](v1.5.0/task-progress_v1.5.0_p001.md): TASK-0015.
 
 - [v1.6.0 p001](v1.6.0/task-progress_v1.6.0_p001.md): TASK-0016–0018.
+
+- [v1.6.1 p001](v1.6.1/task-progress_v1.6.1_p001.md): TASK-0019.
