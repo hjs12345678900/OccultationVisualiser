@@ -106,7 +106,7 @@ def main(argv=None) -> None:
                     "uncertainty_sec":args.prediction_error_sec,
                     "max_duration_sec":args.predicted_max_duration_sec},
                 "event_selection":"manual" if args.event_frames else ("near_prediction" if predicted_midtime else "whole_csv")}
-    (output_dir / f"{basename}_metadata.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2))
+    (output_dir / f"{basename}_metadata.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2), encoding='utf-8')
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
 if __name__ == "__main__":

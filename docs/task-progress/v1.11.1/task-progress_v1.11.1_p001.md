@@ -1,0 +1,4 @@
+# v1.11.1
+
+- TASK-0031: Reproduce the screenshot's charmap/0x90 error through desktop build_config -> resolve_native_mode with CP1252-default file I/O. Both UTF-8 and BOM variants fail before the fix; pass after explicit UTF-8 reads. Saved D/R and B/sigmaB/DNR remain exact. All 51 tests pass, including both encoding regressions.
+- TASK-0032: Audit runtime JSON/worker/metadata text I/O, use explicit UTF-8 and BOM-aware user JSON reads. Add a frozen Unicode desktop job covering Chinese paths and PyOTE notes, timing, SNR, frames and bilingual exports. Source and frozen arm64 self-tests pass the actual isolated export with Chinese paths and BOM PyOTE notes, preserving six verified frames, saved D/R and SNR. Native GUI startup passes. GitHub three-platform package validation in progress. CI disables Python UTF-8 mode so Windows locale-dependent I/O remains exercised.

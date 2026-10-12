@@ -1,3 +1,9 @@
+# 1.11.1
+
+- Fix Windows ANSI decoding failures when loading UTF-8 PyOTE results with non-ASCII notes. Read saved mode, D/R and SNR with an explicit UTF-8 BOM-aware encoding.
+- Specify UTF-8 for internal JSON files, worker requests/results, run provenance and media metadata. Accept UTF-8 BOMs in user-edited projects/configurations.
+- Reproduce the reported undefined CP1252 byte 0x90 before the fix; verify saved UTC and SNR remain unchanged under an ANSI default. Add a frozen desktop-worker export with Chinese paths and UTF-8 BOM PyOTE results on all three platforms.
+
 # 1.11.0
 
 - Add a native Apple Silicon macOS package alongside Intel macOS and Windows x64. Rosetta is not needed for the Apple Silicon package, including ADV2 decoding.

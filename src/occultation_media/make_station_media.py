@@ -21,7 +21,7 @@ def load_config(path):
     Relative files make shareable examples possible without embedding local data.
     """
     path = Path(path).expanduser().resolve()
-    cfg = json.loads(path.read_text(encoding='utf-8'))
+    cfg = json.loads(path.read_text(encoding='utf-8-sig'))
     if cfg.get('alignment') != 'absolute_utc' or not 1 <= len(cfg.get('stations',[])) <= 8:
         raise ValueError('Require one to eight stations and alignment=absolute_utc')
     for values in [cfg, *cfg['stations']]:

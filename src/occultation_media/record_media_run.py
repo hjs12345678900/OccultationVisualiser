@@ -27,7 +27,7 @@ def write_json(path, value):
 def version():
     """Read the authoritative pyproject version, or installed package metadata."""
     project = Path(__file__).resolve().parents[2]/'pyproject.toml'
-    if project.is_file(): return tomllib.loads(project.read_text())['project']['version']
+    if project.is_file(): return tomllib.loads(project.read_text(encoding='utf-8-sig'))['project']['version']
     return importlib.metadata.version('occultationvisualiser')
 
 
@@ -43,7 +43,7 @@ def finish_record(out, inputs, status, error=None):
     if not integrity: status, error = 'failed', 'Input files changed during media generation'
     source = out/'source_snapshot'
     code = {p.name:sha256(p) for p in sorted(source.glob('*.py'))}
-    state=json.loads((source/'code_state.json').read_text())
+    state=json.loads((source/'code_state.json').read_text(encoding='utf-8-sig'))
     write_json(out/'run_metadata.json', dict(status=status, error=error, **state,
         completed_utc=datetime.now(timezone.utc).isoformat(), python=sys.version, platform=platform.platform(),
         input_integrity_verified=integrity, input_files=inputs, source_sha256=code,
@@ -59,8 +59,8 @@ def snapshot_code(out):
     for path in Path(__file__).parent.glob('*.py'):shutil.copy2(path,snapshot/path.name)
     git=dict(commit=None,dirty=None)
     try:
-        commit=subprocess.run(['git','rev-parse','HEAD'],cwd=Path(__file__).parent,capture_output=True,text=True,timeout=5)
-        status=subprocess.run(['git','status','--porcelain'],cwd=Path(__file__).parent,capture_output=True,text=True,timeout=5)
+        commit=subprocess.run(['git','rev-parse','HEAD'],cwd=Path(__file__).parent,capture_output=True,text=True,encoding='utf-8',timeout=5)
+        status=subprocess.run(['git','status','--porcelain'],cwd=Path(__file__).parent,capture_output=True,text=True,encoding='utf-8',timeout=5)
         if commit.returncode==0:git=dict(commit=commit.stdout.strip(),dirty=bool(status.stdout.strip()))
     except (OSError,subprocess.TimeoutExpired):pass
     write_json(snapshot/'code_state.json',dict(version=version(),git=git,command=sys.argv))

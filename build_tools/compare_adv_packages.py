@@ -22,9 +22,9 @@ def decode(executable, source, indices, directory):
     directory.mkdir()
     request, result = directory / 'request.json', directory / 'result.json'
     request.write_text(json.dumps(dict(source=str(source), indices=indices,
-                                      output_dir=str(directory))))
+                                      output_dir=str(directory))), encoding='utf-8')
     subprocess.run([str(executable), '--adv-worker', str(request), str(result)], check=True)
-    metadata = json.loads(result.read_text())
+    metadata = json.loads(result.read_text(encoding='utf-8-sig'))
     hashes = {index: digest(directory / f'{index}.raw') for index in indices}
     return metadata, hashes
 
@@ -57,7 +57,7 @@ def compare(first, second, source, output):
                   input_integrity_verified=True, evidence_sha256=evidence.hexdigest(),
                   executables=[dict(sha256=digest(exe), architecture=subprocess.check_output(
                       ['lipo', '-archs', str(exe)], text=True).strip()) for exe in (first, second)])
-    Path(output).write_text(json.dumps(report, indent=2))
+    Path(output).write_text(json.dumps(report, indent=2), encoding='utf-8')
     return report
 
 

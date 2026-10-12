@@ -16,7 +16,7 @@ def station_snr(cfg, rows, disappearance, reappearance):
     """
     if cfg.get('pyote_result'):
         path = Path(cfg['pyote_result'])
-        result = json.loads(path.read_text())
+        result = json.loads(path.read_text(encoding='utf-8-sig'))
         if 'B' in result and 'sigmaB' in result:
             mean, scatter = float(result['B']), float(result['sigmaB'])
             if not all(math.isfinite(v) and v > 0 for v in (mean, scatter)):

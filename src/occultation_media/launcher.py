@@ -24,11 +24,11 @@ def main():
             from .decode_adv_worker import main as decode
             old_stdin=sys.stdin
             try:
-                sys.stdin=io.StringIO(request.read_text())
-                with result.open('w') as output,contextlib.redirect_stdout(output):decode()
+                sys.stdin=io.StringIO(request.read_text(encoding='utf-8-sig'))
+                with result.open('w', encoding='utf-8') as output,contextlib.redirect_stdout(output):decode()
             finally:sys.stdin=old_stdin
         except Exception:
-            result.write_text(traceback.format_exc());raise SystemExit(1)
+            result.write_text(traceback.format_exc(), encoding='utf-8');raise SystemExit(1)
     elif args and args[0]=='--run-job':
         job=Path(args[1]);config=json.loads(job.read_text(encoding='utf-8'))
         result=job.with_name('result.json')
@@ -45,7 +45,7 @@ def main():
     elif args and args[0]=='--self-test':
         from .self_test import run
         report=run()
-        if len(args)>1:Path(args[1]).write_text(json.dumps(report,indent=2))
+        if len(args)>1:Path(args[1]).write_text(json.dumps(report,indent=2), encoding='utf-8')
         elif sys.stdout:print(json.dumps(report,indent=2))
     elif args and args[0]=='--cli':
         generate_job(args[1:])

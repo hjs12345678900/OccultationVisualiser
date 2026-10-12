@@ -30,7 +30,7 @@ def run():
         for i in range(6):
             t=datetime(2026,1,1)+timedelta(seconds=i*.3)
             csv.append(f"{i},{t.strftime('%H:%M:%S.%f')},{10000 if i in (2,3) else 120000},1000")
-        (root/'curve.csv').write_text('\n'.join(csv))
+        (root/'curve.csv').write_text('\n'.join(csv), encoding='utf-8')
         fits.writeto(root/'cube.fits',cube)
         h=bytearray(178);h[:14]=b'LUCAM-RECORDER';struct.pack_into('<7I',h,14,0,0,1,64,32,16,6)
         (root/'frames.ser').write_bytes(h+cube.tobytes())
@@ -55,7 +55,7 @@ def run():
                 with Image.open(gif) as image:
                     if image.n_frames!=6 or image.size!=(1260,540):raise AssertionError('Invalid GIF')
                 if (output/f'test_occultation_{lang}.mp4').stat().st_size<100:raise AssertionError('Empty MP4')
-            manifest=json.loads((output/'test_metadata.json').read_text())
+            manifest=json.loads((output/'test_metadata.json').read_text(encoding='utf-8-sig'))
             if source=='frames.ravf' and manifest['prediction'] is not None:
                 raise AssertionError('Missing prediction must remain null')
             summaries.append(manifest['outputs']['en'])
@@ -70,33 +70,36 @@ def run():
         for i in range(6):
             clock=str(start+np.timedelta64(i*300,'ms')).split('T')[1]
             native.append(f'{i},[{clock}],{10 if i in (2,3) else 100},32,16')
-        (root/'native.csv').write_text('\n'.join(native))
+        (root/'native.csv').write_text('\n'.join(native), encoding='utf-8')
         cfg=dict(event='Native',target='Target',date_utc='2026-01-01',alignment='absolute_utc',
             start_utc=str(start),end_utc=str(start+np.timedelta64(1500,'ms')),step_s=.3,language='both',
             stations=[dict(name='Observer',curve_format='pymovie_csv',curve='native.csv',target_column='signal-target',
                 source='frames.ser',source_first_frame=0,exposure_s=.3,timestamp_reference='start',source_timestamp_reference='start',mapping_tolerance_s=1e-9)])
-        config=root/'native.json';config.write_text(json.dumps(cfg))
+        config=root/'native.json';config.write_text(json.dumps(cfg), encoding='utf-8')
         # Build the same native job through new automatic desktop defaults.
         from .gui_config import build_config
         from .gui_observer import DEFAULTS
-        (root/'frames.CameraSettings.txt').write_text('Exposure=300ms\n')
+        (root/'frames.CameraSettings.txt').write_text('Exposure=300ms\n', encoding='utf-8')
         automatic=build_config(dict(event='Native',target='Target',date_utc='2026-01-01',step_s='.3',language='both',window_mode='full',skip_gaps='skip',output_root=str(root)),
             [dict(DEFAULTS,curve=str(root/'native.csv'),source=str(root/'frames.ser'))])
-        config.write_text(json.dumps(automatic))
+        config.write_text(json.dumps(automatic), encoding='utf-8')
         with contextlib.redirect_stdout(io.StringIO()):make_station_media(config,root/'native_media')
-        record=json.loads((root/'native_media/run_metadata.json').read_text())
+        record=json.loads((root/'native_media/run_metadata.json').read_text(encoding='utf-8-sig'))
         if not record['input_integrity_verified']:raise AssertionError('Native input integrity failed')
-        meta=json.loads((root/'native_media/media_metadata.json').read_text())
+        meta=json.loads((root/'native_media/media_metadata.json').read_text(encoding='utf-8-sig'))
         if not (root/'native_media/quality_report.json').is_file():raise AssertionError('Missing automatic quality report')
         from .station_cli import main as station_cli
         with contextlib.redirect_stdout(io.StringIO()):
             station_cli([str(config),'--quality-only','--output-dir',str(root/'quality_only')])
-        quality=json.loads((root/'quality_only/quality_report.json').read_text())
+        quality=json.loads((root/'quality_only/quality_report.json').read_text(encoding='utf-8-sig'))
         if quality['stations'][0]['baseline']['available']:raise AssertionError('Baseline needs saved D/R')
         if meta['stations'][0]['residual_max_s']!=0:raise AssertionError('Native source/curve UTC differs')
         for lang in ('en','zh'):
             with Image.open(meta['outputs'][lang]['gif']) as image:
                 if image.n_frames!=6:raise AssertionError('Native GIF elapsed timeline differs')
+        from .self_test_unicode import verify as verify_unicode
+        unicode_job=verify_unicode(root)
     return {'ok':True,'system':platform.system(),'architecture':platform.machine(),
             'exports':['SER','FITS','RAVF','native PyMovie SER'],'languages':['en','zh'],'outputs':['GIF','PNG','MP4'],
-            'branding_resources':True,'noise_diagnostics':True,'automatic_metadata_and_utc':True,'ffmpeg':ffmpeg_executable(),'adv':adv}
+            'branding_resources':True,'noise_diagnostics':True,'automatic_metadata_and_utc':True,
+            'ffmpeg':ffmpeg_executable(),'adv':adv,'unicode_inputs':unicode_job}

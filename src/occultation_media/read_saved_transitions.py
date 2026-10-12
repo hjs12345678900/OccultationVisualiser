@@ -16,7 +16,7 @@ def saved_transitions(cfg, rows):
     """
     if cfg.get('pyote_result'):
         path = Path(cfg['pyote_result'])
-        result = json.loads(path.read_text())
+        result = json.loads(path.read_text(encoding='utf-8-sig'))
         if result.get('timesAreValid') is not True: raise ValueError('Saved PyOTE times are invalid')
         if cfg.get('native_mode', 'raw') != result.get('mode', 'raw'):
             raise ValueError('Selected native curve mode differs from saved PyOTE result')

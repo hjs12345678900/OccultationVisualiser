@@ -36,7 +36,7 @@ def encode_station_language(panels,timeline,selections,output,contacts,durations
     chosen = {int(abs(timeline-t).argmin()) for t in contacts}
     contact_images=[]
     log = output.with_suffix('.ffmpeg.log')
-    with log.open('w') as handle:
+    with log.open('w', encoding='utf-8') as handle:
         process=subprocess.Popen(cmd,stdin=subprocess.PIPE,stderr=handle,**hidden_process_options())
         try:
             for k,utc in enumerate(timeline):

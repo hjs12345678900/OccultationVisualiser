@@ -23,6 +23,7 @@ class AdvSource:
         if not python and not getattr(sys,'frozen',False) and platform.system() == 'Darwin' and platform.machine() == 'arm64':
             candidates += [str(p) for p in (Path('/usr/local/bin/python3-intel64'),) if p.exists()]
         self.env = dict(os.environ)
+        self.env['PYTHONIOENCODING']='utf-8'
         spec = importlib.util.find_spec('Adv2')
         if spec and spec.origin:
             parent = str(Path(spec.origin).parent.parent)
@@ -45,16 +46,16 @@ class AdvSource:
             # JSON files rather than depending on console streams.
             with tempfile.TemporaryDirectory(prefix='adv-request-') as directory:
                 req, res = Path(directory)/'request.json', Path(directory)/'result.json'
-                req.write_text(json.dumps(request))
+                req.write_text(json.dumps(request), encoding='utf-8')
                 result = subprocess.run([sys.executable,'--adv-worker',str(req),str(res)],
                                         capture_output=True,**hidden_process_options())
                 if result.returncode or not res.exists():
-                    detail = res.read_text() if res.exists() else str(result.stderr[-2000:])
+                    detail = res.read_text(encoding='utf-8-sig') if res.exists() else str(result.stderr[-2000:])
                     raise RuntimeError('Bundled ADV decoder failed: '+detail)
-                return json.loads(res.read_text())
+                return json.loads(res.read_text(encoding='utf-8-sig'))
         worker = Path(__file__).with_name('decode_adv_worker.py')
         result = subprocess.run([self.executable,str(worker)],input=json.dumps(request),
-                                text=True,capture_output=True,env=self.env,**hidden_process_options())
+                                text=True,encoding='utf-8',capture_output=True,env=self.env,**hidden_process_options())
         if result.returncode:
             raise RuntimeError(result.stderr[-2500:])
         try:

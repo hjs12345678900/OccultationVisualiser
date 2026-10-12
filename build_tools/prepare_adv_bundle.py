@@ -57,7 +57,7 @@ def prepare(root):
                         '-o', str(library)], check=True)
         (vendor / 'advcore-build.json').write_text(json.dumps(dict(
             architecture=architecture, upstream_commit=COMMIT, source_sha256=SOURCE_SHA256,
-            library_sha256=hashlib.sha256(library.read_bytes()).hexdigest()), indent=2))
+            library_sha256=hashlib.sha256(library.read_bytes()).hexdigest()), indent=2), encoding='utf-8')
     validate_architecture(library, architecture)
     return vendor
 

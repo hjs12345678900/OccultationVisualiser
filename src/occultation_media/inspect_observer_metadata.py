@@ -82,7 +82,7 @@ def resolve_native_mode(obs):
         if chosen not in ('raw','C3','C4'):raise ValueError('Unsupported saved curve mode')
         return chosen
     if obs.get('pyote_result'):
-        result=json.loads(Path(obs['pyote_result']).expanduser().read_text())
+        result=json.loads(Path(obs['pyote_result']).expanduser().read_text(encoding='utf-8-sig'))
         mode=result.get('mode','raw')
         if mode not in ('raw','C3','C4'):raise ValueError('Unsupported saved curve mode')
         return mode

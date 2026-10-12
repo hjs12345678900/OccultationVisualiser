@@ -23,13 +23,13 @@ mac=platform.system()=='Darwin'
 exe=root/('dist/OccultationVisualiser.app/Contents/MacOS/OccultationVisualiser' if mac else 'dist/OccultationVisualiser/OccultationVisualiser.exe')
 report=root/'dist/package-self-test.json'
 subprocess.run([str(exe),'--self-test',str(report)],check=True)
-results=json.loads(report.read_text())
+results=json.loads(report.read_text(encoding='utf-8-sig'))
 if not results['ok']:raise SystemExit('Package self-test failed')
 if results['architecture']!=platform.machine():raise SystemExit('Frozen application architecture differs from build Python')
-results['version']=tomllib.loads((root/'pyproject.toml').read_text())['project']['version']
+results['version']=tomllib.loads((root/'pyproject.toml').read_text(encoding='utf-8-sig'))['project']['version']
 provenance=vendor/'advcore-build.json'
 if platform.system()=='Darwin' and platform.machine()=='arm64':
-    results['advcore_build']=json.loads(provenance.read_text())
+    results['advcore_build']=json.loads(provenance.read_text(encoding='utf-8-sig'))
 if mac:
     subprocess.run([str(exe),'--gui-smoke'],check=True)
     results['gui_startup']=True
@@ -45,5 +45,5 @@ if mac:
 else:
     copy_user_guide(root,root/'dist/OccultationVisualiser')
     archive=Path(shutil.make_archive(str(root/'dist/OccultationVisualiser-Windows-x64'),'zip',root/'dist','OccultationVisualiser'))
-report.write_text(json.dumps(results,indent=2))
+report.write_text(json.dumps(results,indent=2), encoding='utf-8')
 print(f'Release: {archive}')

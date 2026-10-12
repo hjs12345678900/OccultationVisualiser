@@ -53,7 +53,7 @@ class App(JobControls):
 
     def load_project(self,path):
         """Load supported historical choices without resetting scientific overrides."""
-        data=json.loads(Path(path).read_text(encoding='utf-8'))
+        data=json.loads(Path(path).read_text(encoding='utf-8-sig'))
         event,observers=migrate_project(data,DEFAULTS)
         for k,v in self.fields.items():v.set(str(event.get(k,v.get())))
         self.observers=observers;self.refresh()
