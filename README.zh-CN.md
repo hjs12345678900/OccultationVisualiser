@@ -6,17 +6,19 @@
 
 原名 **OccultationMedia**。新构建使用 `OccultationVisualiser.app` / `OccultationVisualiser.exe` 和 `occultationvisualiser` 命令；旧 `occultation-media` 命令及 Python 导入名 `occultation_media` 保留兼容。GitHub 仓库已改名为 OccultationVisualiser；现有本地目录可以保留旧名称。
 
-## GUI 快速开始（v1.5）
+## GUI 快速开始（v1.6）
 
 所有输入都可以在窗口内完成，无需手写 JSON。
 
-1. 在主窗口填写共同的 **Event、小行星／目标星、UTC 日期、显示起止 UTC、显示间隔**及输出语言。跨午夜时，结束时间填写完整日期，例如 `2026-09-13T00:00:05`。
+1. 在主窗口填写共同的 **Event、小行星／目标星、UTC 日期、显示间隔**及输出语言。视频设置选择 **D/R 周围**（默认前后各 10 秒）或 **手动 UTC**。只有手动模式需填写起止 UTC；跨午夜时填完整日期。
 2. 选择或拖入输出文件夹。点击 **添加 Add** 新建 observer；双击列表或点击 **编辑 Edit** 修改，**删除 Delete** 移除。支持 1–8 位观测者，各站使用绝对 UTC。
 3. 在 observer 窗口切换 **Tangra / PyMovie–PyOTE**，选择或拖入曲线、影像及可选的 PyOTE 结果。FITS 序列使用文件夹按钮或拖入整个文件夹。每个文件框一次接收一个文件／文件夹。
-4. 每站填写姓名、曝光毫秒数、影像第 0 帧对应的原始帧号、可选 **Expected UTC**。PyMovie 目标列会从 CSV 中建议第一条 `signal-` 列；有多个目标时请核实。
+4. 每站填写姓名、曝光毫秒数、影像第 0 帧对应的原始帧号、可选 **Expected UTC**。填写纬度、经度（北／东正，南／西负），可选海拔；**北 → 南**按纬度排序并显示坐标。PyMovie 目标列有多个目标时请核实。
 5. **高级 Advanced** 可填写保存的 D/R、目标坐标、FITS HDU、SER 字节序、已知相机时差及核验容差。无需选择 start/middle/end。
 6. 点击 **仅核验 Verify** 检查数据和原始 UTC，再点击 **生成 Generate**。在日志下方查看状态，使用 **打开输出** 查看 GIF、MP4、PNG 和时间核验记录。
 7. **保存项目 Save / 打开项目 Open** 保留公共事件和所有 observer；不需要编辑保存的 JSON。运行时另存解析后的配置，以便复现。
+
+视频设置可选择 **跳过 / 保留**站点间空档，及 **真实时间 / 指定时长**。D/R 模式需要每站的 PyOTE 结果或可靠的 D/R。跳过空档会在光变横轴标出 `//`，画面 UTC 跳到下一段；各站原始时标与 D/R 不变，保留段内缺图仍显示“无画面”。指定时长以秒填写，仅改变播放速度；MP4 按 25 fps 取整（最多 20 ms 时长差），GIF 按厘秒显示。旧 GUI 项目以手动窗口、原输入顺序打开。
 
 ### 时间戳约定
 

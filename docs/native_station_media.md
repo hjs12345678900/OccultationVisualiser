@@ -14,13 +14,27 @@ The examples are templates: replace input paths, dates, UTC window, exposure and
 
 ## Configuration
 
-Top-level fields: `event`, `target`, `date_utc` (first sample UTC date), `alignment: "absolute_utc"`, ISO `start_utc/end_utc`, `step_s >= 0.01`, `language: "en"/"zh"/"both"`, `output_root`, and `stations` (one to eight entries). `--output-dir` overrides `output_root`. Between 2 and 2,000 displayed samples; increase the display step for longer timelines. Original curve samples retain their full cadence.
+Top-level fields: `event`, `target`, `date_utc` (first sample UTC date), `alignment: "absolute_utc"`, `step_s >= 0.01`, `language: "en"/"zh"/"both"`, `output_root`, and `stations` (one to eight entries). `--output-dir` overrides `output_root`. Between 2 and 2,000 displayed samples **after cuts**; increase the display step for longer timelines. Original curve samples retain their full cadence.
+
+| Presentation field | Meaning |
+| --- | --- |
+| `window_mode` | `manual` (legacy default) needs ISO `start_utc/end_utc`; `dr` needs saved/supplied D/R for every station |
+| `event_padding_s` | In `dr` mode, nonnegative seconds before D and after R; default 10 |
+| `skip_gaps` | Boolean, legacy default false. True merges D/R windows, or retains only the union of station curve coverage within manual limits. Individual missing images remain blank |
+| `playback_mode` | `real_time` (default) or `fixed_duration`; only presentation speed changes |
+| `video_duration_s` | Positive target seconds in fixed mode, at least 0.04; H.264 duration rounded to the nearest 40 ms, GIF to centiseconds |
+| `station_order` | `input` (legacy default) or `north_to_south`; the latter requires geographic latitude and longitude for every station |
+
+D/R windows are `[D-padding, R+padding)` and overlaps are merged. With gap skipping off, the continuous range covers the earliest D-padding to latest R+padding. With skipping on, both animation and shared plot axis omit the empty intervals. Double slashes mark plot-axis breaks; the UTC clock jumps to the next retained window. No station is shifted to align its event with another. The last hold in each window ends at its exact boundary before playback quantization. Legacy manual/no-gap runs retain their inclusive endpoint hold. `timeline_plan` records all intervals, removed gaps and per-frame presentation durations, and outputs record actual H.264 duration/frame count.
 
 Each station supplies:
 
 | Field | Meaning |
 | --- | --- |
 | `name`, `curve`, `source` | Display label, saved photometry, and original ADV/SER/RAVF or timed FITS image/sequence |
+| `latitude_deg`, `longitude_deg` | Geographic degrees, north/east positive and south/west negative; both required together. Displayed as N/S and E/W; never star RA/Dec |
+| `altitude_m`, `coordinate_source` | Optional elevation and coordinate provenance |
+| `coordinate_source_file`, `source_manifest` | Optional coordinate evidence and source selection manifest, both hashed with the inputs |
 | `curve_format` | `pymovie_csv`, `tangra_csv`, or `tangra_lc` |
 | `target_column` | Native net-count column such as `signal-target` or `signal-Altona`; no extra background subtraction |
 | `exposure_s` | Positive supplied exposure for CSV; LC uses its recorded exposure |

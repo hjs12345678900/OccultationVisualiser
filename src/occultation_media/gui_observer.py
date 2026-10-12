@@ -28,7 +28,8 @@ def path_entry(parent, variable, row, label, directory=False):
 DEFAULTS=dict(name='Observer',mode='PyMovie / PyOTE',curve='',source='',pyote_result='',
               tracking_csv='',exposure_ms='',target_column='signal-target',source_first_frame='0',
               predicted_utc='',native_mode='raw',mapping_tolerance_s='0.001',source_minus_curve_s='0',
-              ser_byte_order='header',D_utc='',R_utc='',target_xy='',fits_hdu='',timing_source_file='',adv_python='')
+              ser_byte_order='header',D_utc='',R_utc='',target_xy='',fits_hdu='',timing_source_file='',adv_python='',
+              latitude_deg='',longitude_deg='',altitude_m='')
 
 
 class ObserverDialog:
@@ -52,7 +53,10 @@ class ObserverDialog:
         self.field(main,8,'source_first_frame','源第 0 帧对应帧号 First frame ID')
         self.field(main,9,'predicted_utc','Expected UTC（可选，每站独立）')
         self.field(main,10,'native_mode','PyOTE mode',('raw','C3','C4'))
-        self.note=ttk.Label(main,wraplength=630);self.note.grid(row=11,column=0,columnspan=4,sticky='w',pady=8)
+        self.field(main,11,'latitude_deg','纬度 Latitude (°，北正 / 南负)')
+        self.field(main,12,'longitude_deg','经度 Longitude (°，东正 / 西负)')
+        self.field(main,13,'altitude_m','海拔 Altitude (m，可选)')
+        self.note=ttk.Label(main,wraplength=630);self.note.grid(row=14,column=0,columnspan=4,sticky='w',pady=8)
         for row,(key,label) in enumerate([('mapping_tolerance_s','UTC 核验容差 (s)'),('source_minus_curve_s','已知源减曲线时差 (s)'),
                   ('D_utc','报告 D UTC（可选）'),('R_utc','报告 R UTC（可选）'),('target_xy','目标 X Y（从 0 起，可选）'),('fits_hdu','FITS HDU（可选）')]):
             self.field(advanced,row,key,label)

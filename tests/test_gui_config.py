@@ -7,6 +7,22 @@ from occultation_media.gui_observer import DEFAULTS
 
 
 class GuiConfigTests(unittest.TestCase):
+    def test_timeline_controls_and_coordinates(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);curve=root/'curve.csv';source=root/'source.ser'
+            curve.touch();source.touch()
+            event=dict(event='Asteroid',target='Star',date_utc='2026-09-12',start_utc='',end_utc='',
+                       step_s='.1',language='both',output_root=tmp,window_mode='D/R 周围',event_padding_s='10',
+                       skip_gaps='跳过',playback_mode='指定时长',video_duration_s='30',station_order='北 → 南')
+            obs={**DEFAULTS,'curve':str(curve),'source':str(source),'exposure_ms':'200',
+                 'D_utc':'10:00:00','R_utc':'10:00:01','latitude_deg':'-45','longitude_deg':'169'}
+            cfg=build_config(event,[{**obs,'name':'South'},{**obs,'name':'North','latitude_deg':'-37'}])
+            self.assertTrue(cfg['skip_gaps']);self.assertEqual(cfg['window_mode'],'dr')
+            self.assertEqual(cfg['video_duration_s'],30)
+            self.assertEqual([s['name'] for s in cfg['stations']],['North','South'])
+            with self.assertRaises(ValueError):build_config(event,[{**obs,'D_utc':'','R_utc':''}])
+            with self.assertRaises(ValueError):build_config(event,[{**obs,'longitude_deg':''}])
+
     def test_shared_event_independent_prediction_and_units(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);curve=root/'curve.csv';source=root/'source.ser'

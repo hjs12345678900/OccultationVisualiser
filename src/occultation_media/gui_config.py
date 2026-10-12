@@ -46,16 +46,32 @@ def build_config(event, observers):
     if not event['event'].strip() or not event['target'].strip():
         raise ValueError('Enter event and target / 请填写事件及目标星')
     date = event['date_utc'].strip()
-    start, stop = (full_utc(date,event[k]) for k in ('start_utc','end_utc'))
+    window={'D/R 周围':'dr','手动 UTC':'manual'}.get(event.get('window_mode'),event.get('window_mode','manual'))
+    playback={'真实时间':'real_time','指定时长':'fixed_duration'}.get(event.get('playback_mode'),event.get('playback_mode','real_time'))
+    order={'北 → 南':'north_to_south','输入顺序':'input'}.get(event.get('station_order'),event.get('station_order','input'))
+    skip=event.get('skip_gaps',False)
+    if isinstance(skip,str):
+        if skip not in ('跳过','保留'): raise ValueError('Choose skip or keep gaps')
+        skip=skip=='跳过'
+    start, stop = ((full_utc(date,event[k]) for k in ('start_utc','end_utc')) if window=='manual' else ('',''))
     step = number(event,'step_s')
     import numpy as np
-    if step < .01 or utc_ns(stop)<=utc_ns(start): raise ValueError('Check UTC window and display step')
-    count = int((utc_ns(stop)-utc_ns(start))/np.timedelta64(1,'ns'))//round(step*1e9)+1
-    if not 2<=count<=2000: raise ValueError('Choose 2–2000 displayed frames / 调整时间范围或显示间隔')
+    if window not in ('manual','dr') or playback not in ('real_time','fixed_duration'):
+        raise ValueError('Choose window and playback mode')
+    if step < .01 or (window=='manual' and utc_ns(stop)<=utc_ns(start)): raise ValueError('Check UTC window and display step')
+    if window=='manual' and not skip:
+        count = int((utc_ns(stop)-utc_ns(start))/np.timedelta64(1,'ns'))//round(step*1e9)+1
+        if not 2<=count<=2000: raise ValueError('Choose 2–2000 displayed frames / 调整时间范围或显示间隔')
     if not event['output_root'].strip(): raise ValueError('Choose output folder / 请选择输出目录')
     cfg = dict(event=re.sub(r'[^\w .()-]','_',event['event'].strip()),target=event['target'].strip(),
                date_utc=date,start_utc=start,end_utc=stop,step_s=step,language=event['language'],
                output_root=str(Path(event['output_root']).expanduser().resolve()),alignment='absolute_utc',stations=[])
+    cfg.update(window_mode=window,event_padding_s=number(event,'event_padding_s',10),skip_gaps=skip,
+               playback_mode=playback,station_order=order)
+    if cfg['event_padding_s']<0: raise ValueError('D/R padding must be nonnegative / 前后秒数不能为负')
+    if playback=='fixed_duration':
+        cfg['video_duration_s']=number(event,'video_duration_s')
+        if cfg['video_duration_s']<.04: raise ValueError('Video duration must be >=0.04 seconds')
     for obs in observers:
         station = dict(name=obs['name'].strip(),native_mode=obs.get('native_mode','raw'))
         if not station['name']: raise ValueError('Observer name required / 请填写观测者姓名')
@@ -92,5 +108,11 @@ def build_config(event, observers):
             station['target_xy']=[float(v) for v in xy]
             if not all(math.isfinite(v) for v in station['target_xy']): raise ValueError('Invalid target X Y')
         if obs.get('fits_hdu','').strip(): station['fits_hdu']=int(obs['fits_hdu'])
+        for key in ('latitude_deg','longitude_deg','altitude_m'):
+            if str(obs.get(key,'')).strip(): station[key]=number(obs,key)
+        if window=='dr' and 'pyote_result' not in station and 'D_utc' not in station:
+            raise ValueError(f'{station["name"]}: D/R window requires PyOTE results or D/R')
         cfg['stations'].append(station)
+    from .plan_station_timeline import order_stations
+    cfg['stations']=[s['config'] for s in order_stations([dict(config=c) for c in cfg['stations']],order)]
     return cfg

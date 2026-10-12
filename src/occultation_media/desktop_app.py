@@ -8,6 +8,7 @@ from .desktop_controls import JobControls
 from .desktop_job import start_job
 from .gui_config import build_config, TIMING_NOTE
 from .gui_observer import ObserverDialog, DEFAULTS, path_entry
+from .gui_timeline import timeline_controls
 
 
 class App(JobControls):
@@ -16,14 +17,14 @@ class App(JobControls):
         self.root=root;self.process=None;self.output=None;self.observers=[]
         self.ui_language=tk.StringVar(value='中文');self.status_key='idle'
         self.labels=[];self.combos=[];self.fields={}
-        root.title('OccultationVisualiser');root.geometry('1100x850');root.minsize(900,760)
+        root.title('OccultationVisualiser');root.geometry('1100x1000');root.minsize(900,920)
         body=ttk.Frame(root,padding=16);body.pack(fill='both',expand=True)
         ttk.Label(body,text='OccultationVisualiser',font=('',22,'bold')).pack(anchor='w')
         ttk.Label(body,text='共同事件 Shared event → 添加观测者 Add observers → 核验 / 生成 Verify / Generate').pack(anchor='w',pady=6)
         event=ttk.LabelFrame(body,text='事件信息 · 所有 observer 共用',padding=10);event.pack(fill='x')
         fields=[('event','小行星 / Event',''),('target','目标星 / Target',''),
                 ('date_utc','UTC 日期',datetime.now(timezone.utc).strftime('%Y-%m-%d')),
-                ('start_utc','开始 UTC (HH:MM:SS)',''),('end_utc','结束 UTC (HH:MM:SS)',''),
+                ('start_utc','手动开始 / Manual start UTC',''),('end_utc','手动结束 / Manual end UTC',''),
                 ('step_s','显示间隔 / Step (s)','0.1')]
         for i,(key,label,default) in enumerate(fields):
             row,col=divmod(i,2);self.fields[key]=tk.StringVar(value=default)
@@ -33,12 +34,13 @@ class App(JobControls):
         self.fields['language']=tk.StringVar(value='both')
         ttk.Label(event,text='输出语言 / Language').grid(row=3,column=0,sticky='w')
         ttk.Combobox(event,textvariable=self.fields['language'],values=('both','en','zh'),state='readonly').grid(row=3,column=1,sticky='ew')
+        timeline_controls(body,self.fields)
         output=ttk.Frame(body);output.pack(fill='x',pady=8);output.columnconfigure(1,weight=1)
         self.fields['output_root']=tk.StringVar()
         path_entry(output,self.fields['output_root'],0,'输出文件夹 / Output',True)
         observers=ttk.LabelFrame(body,text='Observers · 每站独立文件、曝光与 expected time',padding=10);observers.pack(fill='both',expand=True)
-        self.tree=ttk.Treeview(observers,columns=('mode','curve','expected'),show='tree headings',height=7,selectmode='browse')
-        for key,label,width in [('#0','Observer',150),('mode','来源 / Mode',150),('curve','曲线 / Curve',400),('expected','Expected UTC',150)]:
+        self.tree=ttk.Treeview(observers,columns=('mode','curve','coordinates','expected'),show='tree headings',height=5,selectmode='browse')
+        for key,label,width in [('#0','Observer',140),('mode','来源 / Mode',120),('curve','曲线 / Curve',270),('coordinates','Latitude, Longitude (°)',240),('expected','Expected UTC',150)]:
             self.tree.heading(key,text=label);self.tree.column(key,width=width)
         self.tree.pack(fill='both',expand=True);self.tree.bind('<Double-1>',lambda _:self.edit_observer())
         row=ttk.Frame(observers);row.pack(fill='x',pady=6)
@@ -62,7 +64,8 @@ class App(JobControls):
     def refresh(self):
         self.tree.delete(*self.tree.get_children())
         for i,o in enumerate(self.observers):
-            self.tree.insert('', 'end',iid=str(i),text=o['name'],values=(o['mode'],Path(o['curve']).name,o['predicted_utc']))
+            coordinates=', '.join(o.get(k,'') for k in ('latitude_deg','longitude_deg'))
+            self.tree.insert('', 'end',iid=str(i),text=o['name'],values=(o['mode'],Path(o['curve']).name,coordinates,o['predicted_utc']))
 
     def add_observer(self):
         if len(self.observers)>=8:
@@ -94,7 +97,9 @@ class App(JobControls):
             data=json.loads(Path(path).read_text(encoding='utf-8'))
             if data.get('gui_version')!=1 or not isinstance(data['observers'],list) or len(data['observers'])>8:
                 raise ValueError('Choose a saved GUI project / 请选择 GUI 保存的项目')
-            values={k:str(data['event'][k]) for k in self.fields}
+            fallback=dict(window_mode='手动 UTC',event_padding_s='10',skip_gaps='保留',
+                          playback_mode='真实时间',video_duration_s='60',station_order='输入顺序')
+            values={k:str(data['event'].get(k,fallback.get(k,v.get()))) for k,v in self.fields.items()}
             observers=[{k:str(o.get(k,v)) for k,v in DEFAULTS.items()} for o in data['observers']]
             for k,v in values.items():self.fields[k].set(v)
             self.observers=observers;self.refresh()

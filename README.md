@@ -6,17 +6,19 @@ Turn an occultation observation into a synchronized star-field and light-curve a
 
 Previously **OccultationMedia**. New builds use `OccultationVisualiser.app` / `OccultationVisualiser.exe` and the `occultationvisualiser` command. The Python import `occultation_media` and old `occultation-media` commands remain compatible. The GitHub repository is now OccultationVisualiser; existing local checkouts may retain the old folder name.
 
-## GUI quick start (v1.5)
+## GUI quick start (v1.6)
 
 All inputs are available in the desktop window; writing JSON is not required.
 
-1. Fill in the shared **event, target star, UTC date, display start/end UTC, display step** and output language. Across midnight, enter a full end date-time, e.g. `2026-09-13T00:00:05`.
+1. Fill in the shared **event, target star, UTC date, display step** and output language. Choose **D/R windows** (10 seconds before D and after R by default) or **manual UTC**. Only manual mode requires start/end UTC; use a full date-time across midnight.
 2. Choose or drop an output folder. **Add**, **Edit** (or double-click), and **Delete** manage 1–8 observers sharing absolute UTC.
 3. In each observer editor, switch **Tangra / PyMovie–PyOTE**, then browse or drop the curve, image source and optional PyOTE result. Use the FITS-folder button or drop a whole sequence folder. Each file box accepts one file/folder at a time.
-4. Set the observer name, exposure in milliseconds, original frame ID at source index 0, and optional observer-specific **Expected UTC**. The first `signal-` CSV column is suggested for PyMovie; verify it if several targets exist.
+4. Set the observer name, exposure in milliseconds, original frame ID at source index 0, optional **Expected UTC**, and geographic latitude/longitude (north/east positive). **North → south** sorts by latitude and shows coordinates; altitude is optional. Verify the suggested PyMovie signal column if several targets exist.
 5. **Advanced** contains supplied D/R, target coordinates, FITS HDU, SER byte order, known camera offset and UTC tolerance. There is no start/middle/end selector.
 6. **Verify** checks inputs and native timestamps without encoding. **Generate** creates GIF, MP4 and PNG; use **Open output** to inspect media and timestamp audit records.
 7. **Save / Open** retains shared event information and all observers as a GUI project. No JSON editing is needed. Each run separately saves its resolved configuration for reproducibility.
+
+Choose **skip / keep gaps** and **real time / fixed duration** in the video settings. D/R windows require saved PyOTE results or supplied boundaries for every observer. Skipped gaps have `//` plot-axis marks and an absolute UTC clock jump. Source clocks and D/R remain unchanged; missing images inside retained windows stay blank. Fixed duration changes playback speed only; H.264 uses 25 fps (nearest 40 ms total duration), GIF uses centiseconds. Old GUI projects open in manual/input-order mode.
 
 ### Timestamp policy
 

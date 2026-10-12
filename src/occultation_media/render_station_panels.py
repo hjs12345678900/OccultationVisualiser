@@ -2,6 +2,7 @@
 import numpy as np
 from PIL import Image, ImageDraw
 from .platform_runtime import load_font
+from .render_utc_axis import UtcAxis, coordinate_label
 
 
 def format_counts(value):
@@ -28,6 +29,7 @@ class StationPanels:
     def __init__(self,stations,start,stop,language,context):
         self.stations,self.start,self.stop,self.language = stations,start,stop,language
         self.span = float((stop-start)/np.timedelta64(1,'s'))
+        self.axis = UtcAxis(context.get('intervals', [(start,stop)]))
         self.font = load_font(21,language)
         self.small = load_font(17,language)
         self.size = (1920, max(526, (220 + 305*len(stations) + 1)//2*2))
@@ -44,7 +46,8 @@ class StationPanels:
             color = COLORS[k % len(COLORS)]
             draw.text((42,y+10),station['config']['name'],font=load_font(24,language,True),fill=color)
             draw.text((965,y+10),station['config']['name'],font=load_font(24,language,True),fill=color)
-            values = [r.counts for r in station['rows'] if r.valid and start<=r.utc<=stop]
+            draw.text((42,y+34),coordinate_label(station['config']),font=load_font(15,language),fill=(189,200,217))
+            values = [r.counts for r in station['rows'] if r.valid and self.sx(r.utc) is not None]
             if not values: values = [r.counts for r in station['rows'] if r.valid]
             lo,hi = min(0.,min(values)),max(0.,max(values))
             pad = max(hi-lo,1.)*.1
@@ -53,22 +56,19 @@ class StationPanels:
                 py = self.sy(k,value)
                 draw.line((116,py,898,py),fill=(32,45,67))
                 draw.text((103,py),format_counts(value),font=self.small,fill=(189,200,217),anchor='rm')
-            tick_s = next((s for s in (1,2,5,10,30,60,300,600,3600) if s>=self.span/7),3600)
-            seconds = int(start.astype('datetime64[s]').astype('int64'))
-            minute = np.datetime64((seconds//tick_s+1)*tick_s,'s').astype('datetime64[ns]')
-            while minute < stop:
-                px = self.sx(minute)
-                draw.line((px,y+52,px,y+244),fill=(32,45,67))
-                draw.text((px,y+253),clock(minute)[:8],font=self.small,fill=(189,200,217),anchor='mt')
-                minute += np.timedelta64(tick_s,'s')
             draw.rectangle((116,y+52,898,y+244),outline=(64,79,103),width=2)
+            self.axis.draw(draw,y,self.small,clock)
         step=context['step_s']
-        footer = f'统一绝对 UTC · 原始光变采样 · 无画面不补帧 · 展示间隔 {step:g} 秒（实时速度）' if language=='zh' else f'Shared absolute UTC · original curve cadence · no missing images synthesized · {step:g} s display steps (real time)'
+        plan=context.get('timeline_plan',{})
+        fixed=plan.get('playback_mode')=='fixed_duration'
+        speed=(f'指定视频时长 {plan["requested_video_duration_s"]:g} 秒' if language=='zh' else f'Video duration {plan["requested_video_duration_s"]:g} s') if fixed else ('实时播放' if language=='zh' else 'Real-time playback')
+        cut=(' · // 跳过 UTC 空档' if language=='zh' else ' · // UTC gaps skipped') if len(self.axis.segments)>1 else ''
+        footer = f'统一绝对 UTC · 原始光变采样 · 展示间隔 {step:g} 秒 · {speed}{cut}' if language=='zh' else f'Shared absolute UTC · original curve cadence · {step:g} s display steps · {speed}{cut}'
         draw.text((28,self.size[1]-84),footer,font=self.font,fill=(188,203,222))
         self.footer = context['coverage_note'][language]
 
     def sx(self,utc):
-        return 116+float((utc-self.start)/np.timedelta64(1,'s'))/self.span*782
+        return self.axis.position(utc)
 
     def sy(self,k,counts):
         lo,hi = self.stations[k]['plot_limits']
@@ -83,27 +83,30 @@ class StationPanels:
             rows = station['rows']; y = 105+k*305
             d,r = station['D'],station['R']
             if d is not None and utc>=d:
-                x = self.sx(d)
-                draw.rectangle((max(116,x),y+52,min(898,self.sx(min(utc,r))),y+244),fill=(255,73,98,32))
+                for x1,x2 in self.axis.spans(d,min(utc,r)):
+                    draw.rectangle((x1,y+52,x2,y+244),fill=(255,73,98,32))
                 for boundary in (d,r):
-                    if self.start<=boundary<=min(utc,self.stop):
-                        px=self.sx(boundary);draw.line((px,y+52,px,y+244),fill=(255,73,98),width=2)
+                    px=self.sx(boundary)
+                    if px is not None and boundary<=utc:
+                        draw.line((px,y+52,px,y+244),fill=(255,73,98),width=2)
                 note=f'D {clock(d)}'
                 if utc>=r: note+=f' · R {clock(r)}'
                 draw.text((898,y+13),note+' UTC',font=self.small,fill=(219,163,170),anchor='ra')
             predicted = station['config'].get('predicted_utc')
-            if predicted and self.start<=np.datetime64(predicted,'ns')<=self.stop:
+            if predicted and self.sx(np.datetime64(predicted,'ns')) is not None:
                 px = self.sx(np.datetime64(predicted,'ns'))
                 draw.line((px,y+52,px,y+244),fill=(117,170,224),width=2)
             previous=None
             for row in rows:
                 if row.utc>utc: break
-                if row.utc<self.start or not row.valid:
+                x=self.sx(row.utc)
+                if x is None or not row.valid:
                     previous=None;continue
-                point=(self.sx(row.utc),self.sy(k,row.counts))
-                if previous is not None: draw.line((*previous,*point),fill=COLORS[k % len(COLORS)],width=2)
+                point=(x,self.sy(k,row.counts))
+                segment=self.axis.segment_id(row.utc)
+                if previous is not None and previous_segment==segment: draw.line((*previous,*point),fill=COLORS[k % len(COLORS)],width=2)
                 draw.ellipse((point[0]-2,point[1]-2,point[0]+2,point[1]+2),fill=COLORS[k % len(COLORS)])
-                previous=point
+                previous=point;previous_segment=segment
             px = self.sx(utc)
             draw.line((px,y+52,px,y+244),fill=(249,236,181,120),width=2)
             field = station['frames']

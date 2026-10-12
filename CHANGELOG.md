@@ -1,3 +1,10 @@
+# 1.6.0
+
+- Configure per-station D/R windows with the selected seconds before D and after R, or use manual UTC limits.
+- Skip gaps between station event windows/recordings while keeping absolute UTC; show explicit breaks on the shared curve axis.
+- Choose real-time playback or a fixed total video duration. Quantize cumulative presentation holds to 25 fps without changing source or measured timestamps.
+- Sort observers north to south by signed latitude and display terrestrial coordinates. GUI exposes timing/playback and station location fields; old projects retain their settings.
+
 # 1.5.0
 
 - Complete GUI input workflow with file browsing/drop targets, Tangra/PyMovie switching, shared events and editable 1–8 observers.
