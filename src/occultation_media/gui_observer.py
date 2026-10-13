@@ -2,6 +2,7 @@
 from pathlib import Path
 import csv
 import tkinter as tk
+from .gui_error_text import error_text
 from .gui_hover_help import attach_help
 from tkinter import ttk,messagebox
 from .gui_path_entry import path_entry
@@ -115,14 +116,14 @@ class ObserverDialog:
 
     def refresh_metadata(self,*_):
         if self.metadata:self.exposure_info.configure(text=f"{self.metadata['exposure_s']*1000:.6g} ms · {Path(self.metadata['path']).name}")
-        else:self.exposure_info.configure(text=self.metadata_error or self.ui.text('metadata_missing' if self.values['curve'].get() else 'metadata_pending'))
+        else:self.exposure_info.configure(text=error_text(self.metadata_error,self.language.get()) if self.metadata_error else self.ui.text('metadata_missing' if self.values['curve'].get() else 'metadata_pending'))
         if self.values['exposure_mode'].get()=='manual':
             override=self.ui.text('manual_override')+': '+self.values['exposure_ms'].get()+' ms'
             self.exposure_info.configure(text=(self.exposure_info.cget('text')+' · '+override) if self.metadata else override)
         try:
             mode=resolve_native_mode({k:v.get() for k,v in self.values.items()})
             self.mode_info.configure(text=self.ui.text('mode_'+mode.lower()))
-        except Exception as exc:self.mode_info.configure(text=str(exc))
+        except Exception as exc:self.mode_info.configure(text=error_text(exc,self.language.get()))
         for key in ('image_black','image_white'):
             self.widgets[key].configure(state='normal' if self.values['image_stretch_mode'].get()=='manual' else 'disabled')
         self.widgets['exposure_ms'].configure(state='normal' if self.values['exposure_mode'].get()=='manual' else 'disabled')
@@ -142,5 +143,5 @@ class ObserverDialog:
         from .resolve_station_colors import normalize_color
         try:values['color']=normalize_color(values['color'])
         except ValueError as exc:
-            messagebox.showerror(self.ui.text('station_color'),str(exc),parent=self.window);return
+            messagebox.showerror(self.ui.text('station_color'),error_text(exc,self.ui.language.get()),parent=self.window);return
         self.on_save(values);self.window.destroy()

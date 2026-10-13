@@ -3,6 +3,7 @@ from datetime import datetime,timezone
 from pathlib import Path
 import json
 import tkinter as tk
+from .gui_error_text import error_text
 from tkinter import filedialog,messagebox
 from .desktop_controls import JobControls
 from .desktop_job import start_job
@@ -63,7 +64,7 @@ class App(JobControls):
         path=filedialog.askopenfilename(parent=self.root,title=self.tr('open_project'),filetypes=[('JSON','*.json')])
         if path:
             try:self.load_project(path)
-            except Exception as exc:messagebox.showerror(self.tr('open_project'),str(exc),parent=self.root)
+            except Exception as exc:messagebox.showerror(self.tr('open_project'),error_text(exc,self.ui_language.get()),parent=self.root)
 
     def start(self,verify_only=False,quality_only=False):
         try:
@@ -76,7 +77,7 @@ class App(JobControls):
             if verify_only:argv.append('--verify-only')
             if quality_only:argv.append('--quality-only')
             self.process=start_job(argv,self.output)
-        except Exception as exc:messagebox.showerror(self.tr('cannot_start'),str(exc),parent=self.root);return
+        except Exception as exc:messagebox.showerror(self.tr('cannot_start'),error_text(exc,self.ui_language.get()),parent=self.root);return
         self.begin_poll()
 
     def show_quality(self):
@@ -88,7 +89,7 @@ class App(JobControls):
         try:
             from .gui_quality import QualityDialog
             QualityDialog(self.root,path,self.ui_language)
-        except Exception as exc:messagebox.showerror(self.tr('quality_title'),str(exc),parent=self.root)
+        except Exception as exc:messagebox.showerror(self.tr('quality_title'),error_text(exc,self.ui_language.get()),parent=self.root)
 
     def show_cover(self,auto_close_ms=None):
         from .gui_branding import CoverDialog

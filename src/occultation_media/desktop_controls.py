@@ -1,5 +1,6 @@
 """Desktop job lifecycle and translatable status handling."""
 import json
+from .gui_error_text import error_text
 from .ui_text import text
 from .desktop_job import cancel_job
 
@@ -29,11 +30,16 @@ class JobControls:
         self.cancel.config(state='normal');self.reveal.config(state='normal')
         self.progress.start();self.set_status('running');self.poll()
 
-    def poll(self):
+    def refresh_log(self):
+        if not self.output:return
         log=self.output/'run.log'
         if log.exists():
             self.log.config(state='normal');self.log.delete('1.0','end')
-            self.log.insert('end',log.read_text(encoding='utf-8',errors='replace')[-12000:]);self.log.see('end');self.log.config(state='disabled')
+            self.log.insert('end',error_text(log.read_text(encoding='utf-8',errors='replace')[-12000:],self.ui_language.get()))
+            self.log.see('end');self.log.config(state='disabled')
+
+    def poll(self):
+        self.refresh_log()
         if self.process.poll() is None:self.root.after(500,self.poll);return
         self.progress.stop();self.generate.config(state='normal');self.config_generate.config(state='normal');self.cancel.config(state='disabled')
         self.quality.config(state='normal')

@@ -1,5 +1,6 @@
 """Optional desktop controls for a synchronized nominal-shadow map in exports."""
 import tkinter as tk
+from .gui_error_text import error_text
 from .gui_hover_help import attach_help
 from tkinter import ttk, filedialog, messagebox
 from .read_occult_prediction import form_settings
@@ -61,6 +62,6 @@ class PredictionDialog:
         values.update(shadow_enabled='1',shadow_prediction_file=self.file.get().strip(),shadow_xml=self.xml.get('1.0','end').strip())
         try:form_settings(values)
         except Exception as exc:
-            messagebox.showerror(self.ui.text('shadow_title'),str(exc),parent=self.window);return
+            messagebox.showerror(self.ui.text('shadow_title'),error_text(exc,self.ui.language.get()),parent=self.window);return
         for key in ('shadow_prediction_file','shadow_xml','shadow_enabled'):self.fields[key].set(values[key])
         self.window.destroy()

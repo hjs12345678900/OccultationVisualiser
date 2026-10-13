@@ -1,3 +1,7 @@
+# 1.21.2
+
+- Display known bilingual application errors in the selected UI language in dialogs, metadata notices and worker-log views. Refresh displayed logs on language changes; retain original diagnostic files, paths and dynamic values.
+
 # 1.21.1
 
 - Start the desktop UI in English by default, including contextual help. Retain live language switching and saved-project language preferences. Includes all v1.21.0 hover guidance.

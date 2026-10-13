@@ -74,6 +74,7 @@ def build_workspace(app):
     ui.callbacks.append(lambda:app.status.set(app.tr(app.status_key)))
     app.progress=ttk.Progressbar(body,mode='indeterminate');app.progress.pack(fill='x',pady=4)
     app.log=tk.Text(body,height=4,wrap='word',state='disabled');app.log.pack(fill='x')
+    ui.callbacks.append(app.refresh_log)
     from .gui_shadow_simulation import simulation_controls
     app.simulation_panel=simulation_controls(body,app.fields,ui)
     root.protocol('WM_DELETE_WINDOW',app.close)
