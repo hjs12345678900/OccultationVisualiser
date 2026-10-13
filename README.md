@@ -56,7 +56,7 @@ An entirely empty image selection raises an error with UTC/frame-map checks.
 
 ## Make your first video
 
-1. Enter the asteroid name, target star and observation date in UTC. Choose an output folder.
+1. Click **Import / paste prediction elements…** to select an `.occelmnt`/XML file or paste one complete event XML. **Validate and import** fills the asteroid name, target star and UTC date; these fields remain editable. You can also enter them manually. Choose an output folder.
 2. Click **Add station** and select its curve and images. Check the suggested target column. Exposure is read automatically from recorded metadata.
 3. Choose the time range and playback settings below.
 4. Click **Verify timestamps** to check agreement between the recorded image and curve times.
@@ -143,6 +143,8 @@ Each run creates a new directory. Animation runs save MP4, GIF and PNG previews.
 | Blank station image | Recording coverage and timestamp audit records |
 | Wrong target marker | Target column, original tracking CSV or advanced target X/Y |
 | Generation failed | The job's `run.log` and failed-run metadata |
+
+If the log reports **0 mapped real images**, compare **Curve UTC** and **Source UTC** in the log or `media/alignment_report.json`. For clock-only CSVs, **Observation date UTC** supplies the first sample's date; use the recording's actual UTC date, not the day you generate the video. A filename is only a clue: verify the internally recorded source UTC. Both verification and generation fail when no station matches. Correct the date or select the matching curve/recording; the app never shifts dates automatically. AVI has no independent source UTC and still requires its explicit frame map.
 
 See [supported fields and UTC conventions](docs/native_station_media.md) for detailed timing, source formats and result-file requirements.
 

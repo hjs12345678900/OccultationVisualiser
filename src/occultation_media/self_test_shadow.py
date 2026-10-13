@@ -8,6 +8,7 @@ from PIL import Image
 from .gui_config import build_config
 from .gui_observer import DEFAULTS
 from .make_station_media import make_station_media
+from .import_prediction_event import prediction_event_fields
 
 XML='''<Occultations><Event>
 <Elements>JPL#79,8.17,2026,9,12,9.8753005,-0.0949742,-0.1689929,4.5924730,-2.5776256,0.0053027,0.0003957,0.0000005,0.0000001</Elements>
@@ -19,6 +20,15 @@ XML='''<Occultations><Event>
 
 def verify(root):
     """Render an opt-in job and verify original UTC and packaged coastlines."""
+    event = dict(event='',target='',date_utc='2026-10-13',shadow_enabled='0',shadow_xml=XML)
+    expected = dict(event='Altona',target='UCAC4 336-171713',date_utc='2026-09-12')
+    if prediction_event_fields(event) != expected:
+        raise AssertionError('Pasted prediction did not replace blank identity/stale date')
+    file = root/'import_prediction.occelmnt'
+    file.write_text(XML,encoding='utf-8')
+    if prediction_event_fields(dict(shadow_prediction_file=str(file))) != expected:
+        raise AssertionError('Prediction file import differs from pasted XML')
+    if event['shadow_enabled'] != '0':raise AssertionError('Event import enabled the map')
     observers=[]
     for k in range(2):
         source=root/f'shadow_fits_{k}';source.mkdir()
@@ -79,5 +89,5 @@ def verify(root):
             raise AssertionError('Map camera changed physical frame positions or UTC')
     if meta['utc_timeline']!=follow_meta['utc_timeline'] or meta['timeline_plan']!=follow_meta['timeline_plan']:
         raise AssertionError('Map camera changed the timeline or accelerated gaps')
-    return dict(ok=True,optional_observer=True,custom_station_colors=True,map_view_modes=True,verified_frame_positions=len(rows),offline_map=True,
+    return dict(ok=True,prediction_event_import=True,optional_observer=True,custom_station_colors=True,map_view_modes=True,verified_frame_positions=len(rows),offline_map=True,
                 frame_utc_preserved=True,accelerated_gap=True,path_station_order=True,mp4_shape=[1920,1258],languages=['en','zh'])

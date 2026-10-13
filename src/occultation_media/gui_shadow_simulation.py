@@ -3,7 +3,7 @@ import tkinter as tk
 from .gui_error_text import error_text
 from .gui_hover_help import attach_help
 from tkinter import ttk, filedialog, messagebox
-from .read_occult_prediction import form_settings
+from .import_prediction_event import prediction_event_fields
 
 
 def simulation_controls(parent, fields, ui):
@@ -31,7 +31,7 @@ def simulation_controls(parent, fields, ui):
 
 
 class PredictionDialog:
-    """Choose a local prediction file or paste one XML event, with validation."""
+    """Import validated event identity and elements, preserving map preference."""
     def __init__(self,parent,fields,ui):
         self.fields,self.ui=fields,ui
         self.window=tk.Toplevel(parent);self.window.title(ui.text('shadow_configure'))
@@ -48,6 +48,7 @@ class PredictionDialog:
         attach_help(self.xml,ui,'shadow_xml_label')
         self.xml.insert('1.0',fields['shadow_xml'].get())
         ttk.Label(body,text=ui.text('shadow_model_help'),wraplength=870).pack(anchor='w',pady=6)
+        ttk.Label(body,text=ui.text('prediction_import_help'),wraplength=870).pack(anchor='w',pady=3)
         actions=ttk.Frame(body);actions.pack(fill='x')
         ttk.Button(actions,text=ui.text('cancel'),command=self.window.destroy).pack(side='right')
         ttk.Button(actions,text=ui.text('shadow_save'),command=self.save).pack(side='right',padx=6)
@@ -59,9 +60,9 @@ class PredictionDialog:
 
     def save(self):
         values={k:v.get() for k,v in self.fields.items()}
-        values.update(shadow_enabled='1',shadow_prediction_file=self.file.get().strip(),shadow_xml=self.xml.get('1.0','end').strip())
-        try:form_settings(values)
+        values.update(shadow_prediction_file=self.file.get().strip(),shadow_xml=self.xml.get('1.0','end').strip())
+        try:values.update(prediction_event_fields(values))
         except Exception as exc:
             messagebox.showerror(self.ui.text('shadow_title'),error_text(exc,self.ui.language.get()),parent=self.window);return
-        for key in ('shadow_prediction_file','shadow_xml','shadow_enabled'):self.fields[key].set(values[key])
+        for key in ('event','target','date_utc','shadow_prediction_file','shadow_xml'):self.fields[key].set(values[key])
         self.window.destroy()

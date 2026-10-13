@@ -1,3 +1,13 @@
+# 1.22.0
+
+- Import or paste one complete Occult prediction from the event form to fill asteroid name, target star and UTC date. Validate before updating any fields; retain editability and unrelated settings.
+- Allow event import with the map disabled and preserve its checkbox preference. Do not reject imports against the previous form date; subsequent observation verification still checks source UTC independently.
+
+# 1.21.3
+
+- Report saved curve and independently recorded source UTC ranges, tolerance and closest residual even when no frame matches. Preserve evidence in `alignment_report.json` before timeline planning.
+- Fail both timestamp verification and generation when every station has zero matched images, with a localized date/source check and original UTC evidence. Keep partially missing stations supported; never shift dates automatically.
+
 # 1.21.2
 
 - Display known bilingual application errors in the selected UI language in dialogs, metadata notices and worker-log views. Refresh displayed logs on language changes; retain original diagnostic files, paths and dynamic values.

@@ -49,6 +49,8 @@ def build_workspace(app):
     attach_help(ui.combo(event,app.fields['language'],[(k,k) for k in ('both','zh','en')]),ui,'export_language').grid(row=2,column=1,sticky='ew')
     for c in (1,3):event.columnconfigure(c,weight=1)
     ui.label(event,'event_help',wraplength=1000).grid(row=3,column=0,columnspan=4,sticky='w',pady=4)
+    from .gui_shadow_simulation import PredictionDialog
+    ui.button(event,'import_prediction',command=lambda:PredictionDialog(root,app.fields,ui)).grid(row=4,column=0,columnspan=4,sticky='w',pady=4)
     app.timeline_widgets=timeline_controls(body,app.fields,ui)
     output=ttk.Frame(body);output.pack(fill='x',pady=6);output.columnconfigure(1,weight=1)
     app.fields['output_root']=tk.StringVar();path_entry(output,app.fields['output_root'],0,'output',True,ui)

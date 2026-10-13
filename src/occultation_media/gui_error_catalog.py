@@ -1,5 +1,10 @@
 """Explicit bilingual application errors; paths and foreign exceptions are untouched."""
 ERRORS = [
+    ('Prediction has no asteroid or target name / 预测元素缺少小行星或目标星名称', '预测元素缺少小行星或目标星名称', 'Prediction has no asteroid or target name'),
+    ('No source images match the curve UTC; check Observation date UTC and that the curve and recording belong together / 原始影像与曲线 UTC 无匹配；请检查观测 UTC 日期以及曲线和录像是否对应', '原始影像与曲线 UTC 无匹配；请检查观测 UTC 日期以及曲线和录像是否对应', 'No source images match the curve UTC; check Observation date UTC and that the curve and recording belong together'),
+    ('Curve UTC / 曲线 UTC', '曲线 UTC', 'Curve UTC'),
+    ('Source UTC / 原始影像 UTC', '原始影像 UTC', 'Source UTC'),
+    ('Closest UTC residual (s) / 最近 UTC 偏差（秒）', '最近 UTC 偏差（秒）', 'Closest UTC residual (s)'),
     ('Color must be #RRGGBB or blank / 颜色须为 #RRGGBB 或留空', '颜色须为 #RRGGBB 或留空', 'Color must be #RRGGBB or blank'),
     ('Color must be #RRGGBB or blank / 颜色须为 #RRGGBB 或留空', '颜色须为 #RRGGBB 或留空', 'Color must be #RRGGBB or blank'),
     ('Image stretch: choose auto/full/manual and strength 0–100 / 检查影像拉伸设置', '检查影像拉伸设置', 'Image stretch: choose auto/full/manual and strength 0–100'),

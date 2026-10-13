@@ -62,6 +62,12 @@ class StationFrames:
         timing = source_timing(self.reader, cfg, indices)
         times = np.array([timing[i][0] for i in indices])
         if any(b<=a for a,b in zip(times,times[1:])): raise ValueError('Source UTC must strictly increase')
+        self.alignment_summary = dict(source_format=kind,
+            source_start_utc=str(times[0]), source_end_utc=str(times[-1]),
+            expected_source_start_utc=str(rows[0].utc+offset),
+            expected_source_end_utc=str(rows[-1].utc+offset),
+            mapping_tolerance_s=tolerance, source_minus_curve_s=offset_s,
+            closest_residual_s=None)
         used = set()
         for i, row in enumerate(rows):
             expected = row.utc+offset
@@ -70,6 +76,9 @@ class StationFrames:
             else: source_index = indices[i]
             time, record = timing[source_index]
             residual = float((time-expected)/np.timedelta64(1,'s'))
+            closest = self.alignment_summary['closest_residual_s']
+            if closest is None or abs(residual) < abs(closest):
+                self.alignment_summary['closest_residual_s'] = residual
             if abs(residual) > tolerance:
                 if automatic and (kind=='FITS' or expected<times[0] or expected>times[-1]): continue
                 raise ValueError(f'{cfg["name"]}: UTC mismatch at frame {row.frame}: {residual:g} s')

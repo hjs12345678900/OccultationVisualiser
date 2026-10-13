@@ -12,6 +12,7 @@ from .record_media_run import write_json, input_manifest, finish_record, sha256,
 from .plan_station_timeline import plan_timeline
 from .render_station_panels import StationPanels
 from .encode_station_media import encode_station_language
+from .report_station_alignment import alignment_evidence, alignment_text, NO_MATCH
 
 
 def load_config(path):
@@ -86,6 +87,12 @@ def make_station_media(config_path, output_dir=None, verify_only=False):
                 residual_min_s=min(residuals) if residuals else None,
                 residual_max_s=max(residuals) if residuals else None))
             print(f'{c["name"]}: {len(rows)} samples; {len(frames.mapping)} mapped real images', flush=True)
+            print(alignment_text(alignment_evidence(station)), flush=True)
+        evidence = [alignment_evidence(s) for s in stations]
+        write_json(out/'alignment_report.json', dict(date_utc=cfg['date_utc'], stations=evidence))
+        if not any(s['frames'].mapping for s in stations):
+            inputs = input_manifest(paths)
+            raise ValueError(NO_MATCH+'\n'+'\n'.join(alignment_text(e) for e in evidence))
         for station,cov in zip(stations,coverage): station['coverage']=cov
         from .resolve_station_order import resolve_station_order
         stations,ordering_paths = resolve_station_order(cfg, stations, out)

@@ -51,3 +51,7 @@
 - [v1.20.0 p001](v1.20.0/feature-list_v1.20.0_p001.md): FEAT-0044–0045.
 
 - [v1.21.0 p001](v1.21.0/feature-list_v1.21.0_p001.md): FEAT-0046.
+
+- [v1.21.3 p001](v1.21.3/feature-list_v1.21.3_p001.md): FEAT-0047.
+
+- [v1.22.0 p001](v1.22.0/feature-list_v1.22.0_p001.md): FEAT-0048.
