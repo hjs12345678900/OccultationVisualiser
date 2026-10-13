@@ -66,7 +66,7 @@ class GuiConfigTests(unittest.TestCase):
                 cfg=build_config(event,[{**obs,'name':str(k),'observer':' 示例观测者 / Example Observer ' if k==0 else ''} for k in range(count)])
                 path=root/f'config{count}.json';path.write_text(json.dumps(cfg))
                 output=make_station_media(path,root/f'out{count}')
-                meta=json.loads((output/'media_metadata.json').read_text())
+                meta=json.loads((output/'media_metadata.json').read_text(encoding='utf-8'))
                 self.assertEqual(len(meta['stations']),count)
                 self.assertEqual(meta['stations'][0]['observer'],'示例观测者 / Example Observer')
                 self.assertEqual(meta['stations'][0]['name'],'0')

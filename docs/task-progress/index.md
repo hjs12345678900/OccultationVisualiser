@@ -49,3 +49,5 @@
 - [v1.18.0 p001](v1.18.0/task-progress_v1.18.0_p001.md): TASK-0048.
 
 - [v1.18.0 p002](v1.18.0/task-progress_v1.18.0_p002.md): TASK-0049–0050, supplied-data validation and release.
+
+- [v1.18.1 p001](v1.18.1/task-progress_v1.18.1_p001.md): TASK-0051–0052.

@@ -31,6 +31,10 @@ def verify(root):
     from .gui_config import build_config
     from .gui_observer import DEFAULTS
     from .make_station_media import make_station_media
+    decoder=subprocess.run([ffmpeg_executable(),'-hide_banner','-h','decoder=lagarith'],
+                           capture_output=True,text=True,encoding='utf-8',check=True)
+    if 'Decoder lagarith ' not in decoder.stdout:
+        raise AssertionError('Bundled FFmpeg lacks the Lagarith AVI decoder')
     root=Path(root)/'avi_validation';root.mkdir()
     errors={}
     for codec in ('rawvideo','ffv1','mjpeg'):
@@ -62,4 +66,4 @@ def verify(root):
         raise AssertionError('AVI invented independent source UTC')
     if not meta['warnings']:raise AssertionError('AVI timing limitation was not recorded')
     return dict(codecs=errors,mapped_frames=6,midnight=True,irregular_curve_utc=True,
-                independent_source_utc=False,bilingual_export=True)
+                independent_source_utc=False,bilingual_export=True,lagarith_decoder_available=True)

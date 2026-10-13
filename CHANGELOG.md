@@ -1,3 +1,9 @@
+# 1.18.1
+
+- Make the observer-name export regression read UTF-8 metadata explicitly on Windows ANSI systems; keep the assertion of exact Chinese/English observer text.
+- Verify the bundled Lagarith decoder in the frozen AVI self-test on every platform. Real supplied Protogeneia Lagarith AVI and original PyMovie CSV map all 5977 frames and export successfully with the PyOTE JSON field blank.
+- Distinguish 40 ms raw frame cadence and 80 ms PyOTE block cadence from missing camera exposure metadata; the real-data compatibility test uses an explicitly unverified 40 ms placeholder, not a timing calibration.
+
 # 1.18.0
 
 - Add a saved map-view choice: full shadow path (default) or follow asteroid. Follow mode centers the real shadow position at each displayed UTC, with fixed projection and zoom throughout the clip.
