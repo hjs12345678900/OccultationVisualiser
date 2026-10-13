@@ -97,7 +97,7 @@ def build_config(event, observers, quality_only=False):
                 station[key]=str(path)
         required=('curve',) if quality_only else ('curve','source')
         if not all(k in station for k in required): raise ValueError('Choose curve and source / 请选择曲线及影像')
-        kind = 'tangra_lc' if Path(station['curve']).suffix.lower()=='.lc' else ('tangra_csv' if obs['mode']=='Tangra' else 'pymovie_csv')
+        kind = 'pymovie_records' if Path(station['curve']).suffix.lower()=='.pymovie' else ('tangra_lc' if Path(station['curve']).suffix.lower()=='.lc' else ('tangra_csv' if obs['mode']=='Tangra' else 'pymovie_csv'))
         source_path=Path(station.get('source',station['curve']))
         suffix = source_path.suffix.lower()
         exposure=resolve_exposure(obs)
@@ -121,13 +121,18 @@ def build_config(event, observers, quality_only=False):
             if not quality_only and station['source_minus_curve_s']!=0:
                 raise ValueError('AVI cannot independently verify a source clock offset; use zero')
             station['timing_policy']='AVI explicit frame identity; UTC from saved curve; no independent source clock'
-        if kind=='pymovie_csv' and (source_path.is_dir() or suffix in ('.fits','.fit','.fts')):
+        if kind in ('pymovie_csv','pymovie_records') and (source_path.is_dir() or suffix in ('.fits','.fit','.fts')):
             from astropy.io import fits
             source=source_path
             files=sorted(p for p in source.iterdir() if p.suffix.lower() in ('.fits','.fit','.fts')) if source.is_dir() else [source]
             if files:
                 header=fits.getheader(files[0],int(obs.get('fits_hdu') or 0))
                 if 'DATE-AVG' in header: station['timestamp_reference']='midpoint'
+        from .resolve_image_stretch import stretch_settings
+        image_settings=dict(mode=obs.get('image_stretch_mode','auto'),strength=number(obs,'image_strength',8))
+        if image_settings['mode']=='manual':
+            image_settings.update(black=number(obs,'image_black'),white=number(obs,'image_white'))
+        station['image_stretch']=stretch_settings(dict(image_stretch=image_settings))
         if station['exposure_s']<=0 or station['mapping_tolerance_s']<0: raise ValueError('Check exposure/tolerance')
         for key in ('predicted_utc','D_utc','R_utc'):
             if obs.get(key,'').strip(): station[key]=full_utc(date,obs[key])

@@ -7,7 +7,7 @@ from .gui_path_entry import path_entry
 from .gui_localization import Localizer
 from .inspect_observer_metadata import inspect_exposure,resolve_native_mode
 
-DEFAULTS=dict(name='Station',observer='',color='',mode='PyMovie / PyOTE',curve='',source='',pyote_result='',
+DEFAULTS=dict(image_stretch_mode='auto',image_black='0',image_white='255',image_strength='8',name='Station',observer='',color='',mode='PyMovie / PyOTE',curve='',source='',pyote_result='',
               pyote_fit_index='',tracking_csv='',exposure_ms='',exposure_mode='auto',target_column='signal-target',source_first_frame='',
               predicted_utc='',native_mode='auto',mapping_tolerance_s='0.001',source_minus_curve_s='0',
               ser_byte_order='header',D_utc='',R_utc='',target_xy='',fits_hdu='',timing_source_file='',adv_python='',
@@ -22,11 +22,12 @@ class ObserverDialog:
         self.ui=Localizer(self.window,self.language);self.on_save=on_save
         self.values={k:tk.StringVar(value=str(values.get(k,v))) for k,v in DEFAULTS.items()}
         self.metadata=None;self.metadata_error=None;self.pending=None;self.widgets={}
-        self.window.geometry('980x760');self.window.minsize(870,700)
+        self.window.geometry('980x820');self.window.minsize(870,780)
         self.book=ttk.Notebook(self.window);self.book.pack(fill='both',expand=True,padx=12,pady=12)
         main=ttk.Frame(self.book,padding=12);location=ttk.Frame(self.book,padding=12);advanced=ttk.Frame(self.book,padding=12)
-        self.panels=[main,location,advanced]
-        for panel,key in zip(self.panels,('files_tab','location_tab','advanced_tab')):
+        image=ttk.Frame(self.book,padding=12)
+        self.panels=[main,location,advanced,image]
+        for panel,key in zip(self.panels,('files_tab','location_tab','advanced_tab','image_tab')):
             self.book.add(panel,text=self.ui.text(key));panel.columnconfigure(1,weight=1)
         self.field(main,0,'name','station_name')
         self.field(main,1,'observer','observer_name')
@@ -35,7 +36,7 @@ class ObserverDialog:
         self.field(main,3,'mode','curve_kind',[('Tangra','Tangra'),('PyMovie / PyOTE','PyMovie / PyOTE')],literal=True)
         for row,key,label in [(4,'curve','curve_input'),(5,'source','source_input'),(6,'pyote_result','pyote_input'),(7,'tracking_csv','tracking_input')]:
             path_entry(main,self.values[key],row,label,ui=self.ui,source=key=='source',
-                       filetypes=[('PyOTE results', '*.txt *.json')] if key=='pyote_result' else None)
+                       filetypes=[('PyOTE results', '*.txt *.json')] if key=='pyote_result' else ([('Light curves','*.csv *.pymovie *.lc')] if key=='curve' else None))
         self.field(main,8,'target_column','target_column')
         self.ui.label(main,'auto_exposure').grid(row=9,column=0,sticky='w',pady=6)
         self.exposure_info=ttk.Label(main,wraplength=540);self.exposure_info.grid(row=9,column=1,columnspan=3,sticky='w')
@@ -58,11 +59,15 @@ class ObserverDialog:
         self.field(advanced,15,'pyote_fit_index','pyote_fit_index')
         self.ui.label(advanced,'pyote_fit_help',wraplength=875).grid(row=16,column=0,columnspan=4,sticky='w',pady=6)
         self.ui.label(advanced,'advanced_help',wraplength=875).grid(row=17,column=0,columnspan=4,sticky='w',pady=6)
-        buttons=ttk.Frame(self.window);buttons.pack(fill='x',padx=12,pady=8)
+        self.field(image,0,'image_stretch_mode','image_stretch_mode',[(v,'stretch_'+v) for v in ('auto','full','manual')])
+        for row,key in enumerate(('image_black','image_white','image_strength'),1):self.field(image,row,key,key)
+        self.ui.label(image,'image_help',wraplength=875).grid(row=4,column=0,columnspan=4,sticky='w',pady=10)
+        buttons=ttk.Frame(self.window);buttons.pack(side='bottom',fill='x',padx=12,pady=8)
+        self.book.pack_forget();self.book.pack(fill='both',expand=True,padx=12,pady=12)
         self.ui.button(buttons,'cancel',command=self.window.destroy).pack(side='right')
         self.ui.button(buttons,'save_station',command=self.save).pack(side='right',padx=8)
         for key in ('curve','source','pyote_result','fits_hdu','camera_settings_file','adv_python'):self.values[key].trace_add('write',self.schedule_inspection)
-        for key in ('native_mode','exposure_mode','exposure_ms','target_column','pyote_fit_index'):self.values[key].trace_add('write',self.refresh_metadata)
+        for key in ('native_mode','exposure_mode','exposure_ms','target_column','pyote_fit_index','image_stretch_mode'):self.values[key].trace_add('write',self.refresh_metadata)
         self.ui.callbacks.append(self.translate_dynamic)
         self.window.bind('<Destroy>',self.destroy,add='+')
         self.translate_dynamic();self.schedule_inspection()
@@ -85,7 +90,12 @@ class ObserverDialog:
         curve=Path(values['curve'])
         try:
             if curve.is_file():
-                if curve.suffix.lower()=='.lc':self.values['mode'].set('Tangra')
+                if curve.suffix.lower()=='.pymovie':
+                    from .read_pymovie_records import aperture_names
+                    names=aperture_names(curve);columns=['signal-'+n for n in names]
+                    self.values['mode'].set('PyMovie / PyOTE')
+                    if columns and values['target_column'] not in columns:self.values['target_column'].set(columns[0])
+                elif curve.suffix.lower()=='.lc':self.values['mode'].set('Tangra')
                 elif curve.suffix.lower()=='.csv':
                     with curve.open(encoding='utf-8-sig') as stream:
                         for line in stream:
@@ -111,11 +121,13 @@ class ObserverDialog:
             mode=resolve_native_mode({k:v.get() for k,v in self.values.items()})
             self.mode_info.configure(text=self.ui.text('mode_'+mode.lower()))
         except Exception as exc:self.mode_info.configure(text=str(exc))
+        for key in ('image_black','image_white'):
+            self.widgets[key].configure(state='normal' if self.values['image_stretch_mode'].get()=='manual' else 'disabled')
         self.widgets['exposure_ms'].configure(state='normal' if self.values['exposure_mode'].get()=='manual' else 'disabled')
 
     def translate_dynamic(self):
         self.window.title(self.ui.text('station_editor'))
-        for panel,key in zip(self.panels,('files_tab','location_tab','advanced_tab')):self.book.tab(panel,text=self.ui.text(key))
+        for panel,key in zip(self.panels,('files_tab','location_tab','advanced_tab','image_tab')):self.book.tab(panel,text=self.ui.text(key))
         self.refresh_metadata()
 
     def destroy(self,event):

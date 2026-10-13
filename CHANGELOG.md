@@ -1,3 +1,10 @@
+# 1.20.0
+
+- Fix blank image selections when processed curves have sampling intervals longer than single-frame exposure; bound selection conservatively and retain actual frame/UTC labels and long gaps.
+- Add a bilingual image-brightness page with caption-safe AVI auto levels, legacy whole-field levels, manual black/white and asinh strength; fix levels for the entire clip and record their estimator region. Preserve all photometry.
+- Import native PyMovie v1 binary aperture records without decoding them as CSV, retaining Unicode names, saved net signals, frames and UTC. Reject field/half-frame records clearly and retain partial-tail provenance.
+- Keep all v1.19 native PyOTE TXT imports, matching raw tracking for processed curves, and legacy adapter JSON compatibility.
+
 # 1.19.0
 
 - Import native PyOTE `fit_metrics.txt` and `.pyote_log.txt` directly, retaining saved D/R, baseline parameters, log block integration and 95% timing errors. Legacy adapter JSON remains compatible.

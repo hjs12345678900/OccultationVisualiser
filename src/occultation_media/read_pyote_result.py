@@ -41,7 +41,11 @@ def read_result_text(path):
 
 def curve_basename(value):
     """Compare moved Windows/macOS source names, allowing .pyote.csv exports."""
-    return PureWindowsPath(str(value).replace('/', '\\')).name.replace('.pyote.csv', '.csv')
+    name=PureWindowsPath(str(value).replace('/', '\\')).name.replace('.pyote.csv', '.csv')
+    if name.endswith('.pymovie'):
+        name=name[:-8]
+        if not name.endswith('.csv'):name+='.csv'
+    return name
 
 
 def select_fit(candidates, cfg):

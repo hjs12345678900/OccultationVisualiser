@@ -3,21 +3,26 @@ from pathlib import Path
 import numpy as np
 from .read_frame_sources import open_source
 from .read_source_timing import source_timing
-from .render_detector_field import first_frame_limits, display_pixels
+from .resolve_image_stretch import image_limits, stretch_pixels
 
 
 def nearest_sample(rows, utc):
-    """Return nearest actual exposure within coverage, without filling long gaps.
+    """Return nearest actual saved frame within sampling support, preserving gaps.
 
-    Each image label retains that sample's own UTC. A <=0.55-exposure distance
-    tolerates midpoint sampling/rounding only; images beyond coverage are blank.
+    Each image label retains its actual UTC. Support is 0.55 times the larger
+    of recorded exposure and the shortest saved-sample cadence. This conservative
+    cadence cap prevents a sparse long gap from widening image support. It controls
+    display selection only and is never substituted for shutter exposure.
+    Outside recording coverage and beyond typical support, images stay blank.
     """
     if utc < rows[0].utc or utc > rows[-1].utc: return None
     times = np.array([r.utc for r in rows])
     index = int(np.searchsorted(times, utc))
     candidates = [i for i in (index-1, index) if 0 <= i < len(rows)]
     best = min(candidates, key=lambda i: abs(int((times[i]-utc)/np.timedelta64(1,'ns'))))
-    return best if abs(float((times[best]-utc)/np.timedelta64(1,'s'))) <= rows[best].exposure_s*.55 else None
+    cadence = float(np.min(np.diff(times)/np.timedelta64(1,'s'))) if len(rows)>1 else 0
+    support = max(rows[best].exposure_s,cadence)*.55
+    return best if abs(float((times[best]-utc)/np.timedelta64(1,'s'))) <= support else None
 
 
 class StationFrames:
@@ -32,7 +37,7 @@ class StationFrames:
     def __init__(self, cfg, rows, native_times=None):
         self.cfg, self.rows = cfg, rows
         self.mapping, self.records, self.prepared = {}, {}, {}
-        self.limits = None
+        self.limits = None; self.stretch_info = None
         path = Path(cfg['source']).expanduser().resolve()
         self.reader = open_source(path, ser_byte_order=cfg.get('ser_byte_order','header'),
                                   fits_hdu=cfg.get('fits_hdu'), adv_python=cfg.get('adv_python'))
@@ -75,7 +80,8 @@ class StationFrames:
     def prepare(self, indices):
         """Cache requested real uint8 frames with one fixed whole-field stretch.
 
-        Limits are first displayed frame's 0.5/99.95 percentiles, asinh factor8.
+        Levels/strength are fixed from the first visible frame or explicit settings.
+        Auto AVI excludes the bottom caption area from level estimation only.
         Preserve full-field pixels, aspect and orientation; no interpolation.
         """
         wanted = sorted(set(i for i in indices if i is not None and i in self.mapping))
@@ -85,8 +91,9 @@ class StationFrames:
         for i in wanted:
             index = self.mapping[i]
             image = pixels.pop(index)[0] if pixels is not None else self.reader.read(index)[0]
-            if self.limits is None: self.limits = first_frame_limits(image)
-            self.prepared[i] = display_pixels(image, *self.limits)
+            if self.limits is None:
+                self.limits,self.stretch_info = image_limits(image,self.cfg,self.reader.metadata['format'])
+            self.prepared[i] = stretch_pixels(image,self.limits,self.stretch_info)
 
     def close(self):
         """Release a source handle where provided; cached display pixels expire."""

@@ -72,21 +72,30 @@ def read_lc_curve(path):
 def read_station_curve(cfg, date):
     """Return one station's full-cadence MediaSamples, native UTC and provenance.
 
-    Explicit cfg selects pymovie_csv, tangra_csv or tangra_lc. CSV
+    Explicit cfg selects pymovie_csv, binary pymovie_records, tangra_csv or
+    tangra_lc. CSV
     start timestamps receive half the supplied exposure only for midpoint
     display; midpoint CSV values retain already-applied clock corrections.
     Reject unordered frames/times; native input paths are returned for hashing.
     """
     kind = cfg['curve_format']
-    if kind not in ('pymovie_csv','tangra_csv','tangra_lc'):
+    if kind not in ('pymovie_csv','pymovie_records','tangra_csv','tangra_lc'):
         raise ValueError('Unsupported curve_format')
     path = Path(cfg['curve']).expanduser().resolve()
-    if kind == 'tangra_lc':
+    if kind == 'pymovie_records':
+        from .read_pymovie_records import read_record_curve
+        rows,native,info,_ = read_record_curve(cfg,date)
+    elif kind == 'tangra_lc':
         rows, native, info = read_lc_curve(path)
     else:
-        lines = path.read_text(encoding='utf-8-sig').splitlines()
+        if path.suffix.lower() not in ('.csv','.txt'):
+            raise ValueError('Choose an exported CSV, native .pymovie or Tangra LC curve / 请选择导出 CSV、原生 .pymovie 或 Tangra LC')
+        try:lines = path.read_text(encoding='utf-8-sig').splitlines()
+        except UnicodeDecodeError as exc:
+            raise ValueError('Curve is not UTF-8 CSV text; choose .pymovie as a native curve / 该曲线不是 CSV 文本') from exc
         header = 'FrameNum,' if kind == 'pymovie_csv' else 'FrameNo,'
-        start = next(i for i,line in enumerate(lines) if line.startswith(header))
+        start = next((i for i,line in enumerate(lines) if line.startswith(header)),None)
+        if start is None:raise ValueError('Curve header missing; choose matching PyMovie/Tangra export / 未找到曲线表头，请选正确导出文件')
         table = [{k.strip():v for k,v in row.items()} for row in csv.DictReader(lines[start:])]
         exposure = cfg['exposure_s']
         labels = [r['timeInfo'] if kind == 'pymovie_csv' else r['Time (UT)'] for r in table]
@@ -120,6 +129,7 @@ def read_station_curve(cfg, date):
     if cfg.get('tracking_csv'):
         tracking_cfg = dict(cfg, curve=cfg['tracking_csv'])
         tracking_cfg.pop('tracking_csv')
+        if kind=='pymovie_records':tracking_cfg['curve_format']='pymovie_csv'
         tracking_cfg['target_column'] = cfg.get('tracking_target_column', cfg['target_column'])
         tracking, track_native, _, _ = read_station_curve(tracking_cfg, date)
         by_frame = {r.frame:r for r in tracking}

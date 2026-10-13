@@ -102,6 +102,9 @@ def make_station_media(config_path, output_dir=None, verify_only=False):
         paths += prediction_paths
         inputs = input_manifest(paths)
         selections = [[nearest_sample(s['rows'], t) for s in stations] for t in timeline]
+        displayed = [sum(i[k] is not None and i[k] in s['frames'].mapping for i in selections) for k,s in enumerate(stations)]
+        if not verify_only and not any(displayed):
+            raise ValueError('No images selected: check display UTC range, original curve and AVI frame-0 mapping / 未选中影像，请检查显示 UTC 范围、曲线和 AVI 第 0 帧对应')
         partial = [c for c in coverage if c['matched_images']<c['samples']]
         warnings = [f'{c["name"]}: {c["matched_images"]}/{c["samples"]} source images; missing times stay blank' for c in partial]
         warnings += [f'{s["config"]["name"]}: AVI frame identity declared by user; UTC comes from curve, no independent source UTC verification'
@@ -136,7 +139,8 @@ def make_station_media(config_path, output_dir=None, verify_only=False):
                 **({'observer':s['config']['observer']} if s['config'].get('observer') else {}),
                 path_offset=s.get('path_offset'),
                 D_utc=str(s['D']) if s['D'] is not None else None, R_utc=str(s['R']) if s['R'] is not None else None,
-                stretch=f.limits, frame_alignment=[f.records[i] for i in sorted(f.records)]))
+                stretch=f.limits, stretch_info=f.stretch_info,
+                displayed_images=displayed[len(metadata)], frame_alignment=[f.records[i] for i in sorted(f.records)]))
         write_json(out/'media_metadata.json', dict(alignment='absolute_utc', no_event_time_shift=True,
             timeline_plan=plan, station_order=cfg.get('station_order','input'),
             shadow_simulation=simulation.evidence if simulation else {'enabled':False},

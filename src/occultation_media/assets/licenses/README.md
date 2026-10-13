@@ -24,12 +24,35 @@ For an animation, choose a light curve and its matching original recording. Keep
 | --- | --- |
 | Tangra CSV | AVI (explicit frame mapping), ADV2, SER, RAVF, timed FITS sequence, or matching Tangra LC target stamps |
 | Tangra LC with recorded times | Original recording, or the target stamps embedded in the LC file |
-| PyMovie CSV | AVI (explicit frame mapping), original ADV2, SER, RAVF or timed FITS sequence |
+| PyMovie CSV or native `.pymovie` v1 | AVI (explicit frame mapping), original ADV2, SER, RAVF or timed FITS sequence |
 | Saved C3/C4 analysis CSV | Original recording; optionally the original tracking CSV if positions are absent |
 
 Tangra CSV uses target object 1. PyMovie uses the selected `signal-<target>` column. LC stamps contain the recorded 35×35 target cutout; choose the original recording for a full-field view.
 
 AVI is supported through the bundled FFmpeg decoder. Supply the curve frame ID corresponding to AVI frame 0 and choose the curve timestamp convention; the app never derives absolute UTC or exposure from container FPS. Keep original frame order: edited, integrated or frame-dropped copies need a separately validated frame map and are not supported. AVI timing comes from the curve and is marked as having no independent source UTC verification. MP4 input remains unsupported. FITS sequences need per-frame UTC records. For PyOTE, put `fit_metrics.txt` or `<name>.pyote_log.txt` in **Native PyOTE result TXT**; put the original PyMovie CSV or processed `<name>.pyote.csv` in **Light curve**. No JSON export or renaming is needed. The app imports saved D/R and `B/sigmaB` without refitting. Logs also retain recorded block integration and 95% timing errors. If several fits match the target and curve filename, select the one-based **PyOTE fit record** in Advanced. Legacy adapter JSON remains supported. See the [configuration reference](docs/native_station_media.md).
+
+## Image brightness and native PyMovie files
+
+In the station editor, **Image brightness** controls display only. Auto AVI
+estimates fixed 0.5/99.99 percentile levels from the upper 85% of the first
+visible frame, avoiding bottom timestamp captions; the complete frame remains
+visible. Other sources retain whole-field automatic levels. Choose legacy
+whole-field auto or manual decoded-pixel black/white values and strength
+(0 = linear, default 8) when preferred. Photometry and D/R remain unchanged.
+
+Native binary `.pymovie` aperture files (format v1) are accepted in **Light curve**,
+with the matching original AVI/SER/etc. in **Images**. Saved intensity is already
+background subtracted; the importer preserves it, frame IDs and UTC. It does
+not treat the binary file as CSV text. Select `signal-<aperture>`; initial header
+positions are static, so use a matching original tracking CSV for moving targets.
+Exposure still requires independent metadata or an explicit override. Field-mode
+half-frame records are currently rejected with a clear message.
+
+Image selection uses saved sampling cadence as a conservative display support,
+separately from exposure; block-integrated/sparse curves no longer become blank
+just because their sample interval exceeds one camera exposure. Images retain
+their actual frame/UTC labels. Recording boundaries and long gaps remain blank.
+An entirely empty image selection raises an error with UTC/frame-map checks.
 
 ## Make your first video
 

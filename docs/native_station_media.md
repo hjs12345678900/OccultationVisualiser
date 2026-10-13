@@ -40,7 +40,7 @@ Each station supplies:
 | `altitude_m`, `coordinate_source` | Optional elevation and coordinate provenance |
 | `coordinate_source_file`, `source_manifest` | Optional coordinate evidence and source selection manifest, both hashed with the inputs |
 | `reported_snr`, `snr_source_file` | Optional separately reported metric object and evidence file (hashed); preserved in metadata, never substituted for baseline SNR |
-| `curve_format` | `pymovie_csv`, `tangra_csv`, or `tangra_lc` |
+| `curve_format` | `pymovie_csv`, `pymovie_records` (binary v1), `tangra_csv`, or `tangra_lc` |
 | `target_column` | Native net-count column such as `signal-target` or `signal-Altona`; no extra background subtraction |
 | `exposure_s` | Positive CSV exposure in resolved JSON; GUI reads recorded metadata or explicit advanced override. LC retains its recorded durations |
 | `exposure_evidence` | GUI records exposure seconds, method and evidence path (hashed); cadence is never substituted for exposure |
@@ -54,6 +54,7 @@ Each station supplies:
 | `pyote_fit_index` | Optional positive one-based index among fits matching the target/source; distinct multiple results require a choice |
 | `native_mode` | `raw` (default), `C3` or `C4`, describing the imported curve. Native TXT has no such mode field; only legacy JSON declares it |
 | `camera_settings_file` | Optional capture-settings text file; otherwise detect a nearby `.CameraSettings.txt` |
+| `image_stretch` | Optional `{mode: auto/full/manual, strength: 0..100}`; manual also needs decoded-pixel `black/white` with white > black. Auto AVI excludes bottom 15% only for fixed-level estimation; all pixels remain displayed |
 | `tracking_csv` | Optional original native CSV for coordinates/defect flags when normalized exports omit them; each imported curve frame and UTC must match; tracking may contain additional original frames |
 | `tracking_target_column` | Tracking CSV's target column, defaults to `target_column` |
 | `D_utc/R_utc` | Optional pair of supplied observation UTC boundaries when no native fit is supplied |
@@ -110,7 +111,7 @@ FITS sequences are matched by recorded UTC rather than assuming file 0 is measur
 
 ## Validation and artifacts
 
-Native single-station output is 1920×526; four-station output is 1920×1440. Other station counts use an even-height canvas with one row per observer. Each row pairs original net ADU with an entire field and a real target crop. Original orientation/aspect is retained. A station's first displayed full frame sets fixed 0.5/99.95 percentile limits and factor-8 asinh for both field and target detail.
+Native single-station output is 1920×526; four-station output is 1920×1440. Other station counts use an even-height canvas with one row per observer. Each row pairs original net ADU with an entire field and a real target crop. Original orientation/aspect is retained. A station's first displayed full frame sets fixed levels and asinh strength for field and target detail. Default auto AVI uses upper-85% sky percentiles 0.5/99.99; other auto/legacy fields use whole-frame 0.5/99.95. Manual levels and strength (0 = linear) are supported. Metadata records the exact estimator region, levels and strength.
 
 Outputs include bilingual H.264/yuv420p MP4, scaled GIF, PNG previews, stages/contact sheets, resolved configuration, source snapshot, `media_metadata.json` and `run_metadata.json`. Input hashes are checked again after generation. This verifies consistency with recorded clocks; it does not independently calibrate those clocks.
 
@@ -365,3 +366,20 @@ display fallback is deterministic even when preview frames are drawn out of
 order; exported physical positions remain absent where the center misses Earth.
 The map mode does not alter image matching, physical coordinates, UTC, D/R,
 station ordering, colors or accelerated-gap timing.
+
+## Native PyMovie binary curves (v1.20.0)
+
+`pymovie_records` reads the documented little-endian `PYMOVIE\0` format v1,
+including UTF-32LE source/aperture names, saved net intensity, integral source
+frame ID and ASCII UTC clock. Stored header/record sizes permit trailing field
+extensions; a partial final record is ignored with its byte count recorded.
+Observation dates must agree when present. Empty UTC and half-frame field mode
+fail explicitly. No exposure or per-frame centroid exists in this schema;
+header centroids are static initial positions, with tracking CSV or explicit
+coordinates available separately. No ROI photometry is recomputed.
+
+Display support uses 0.55 times max(recorded exposure, shortest positive saved
+sampling interval), within recording coverage. The conservative interval cap
+preserves long gaps even with only three samples. This only selects a real
+frame; it never changes UTC, shutter duration or counts. `displayed_images`
+records selections and a wholly empty animation selection fails explicitly.

@@ -17,15 +17,18 @@ def first_frame_limits(frame):
     return float(black),float(max(white,black+1) if white <= black else white)
 
 
-def display_pixels(frame, black, white):
-    """Map counts to uint8: round(255*asinh(8*x)/asinh(8)).
+def display_pixels(frame, black, white, strength=8):
+    """Map counts to uint8: round(255*asinh(s*x)/asinh(s)).
 
     x=clip((counts-black)/(white-black),0,1); nonfinite pixels display black.
-    The supplied fixed limits must be reused for every frame of the clip.
+    s is dimensionless strength (default 8); zero selects linear display.
+    The supplied fixed limits/strength must be reused for every frame of the clip.
     """
+    if not np.isfinite([black,white,strength]).all() or white<=black or not 0<=strength<=100:
+        raise ValueError('Invalid display levels/strength')
     x = np.clip((np.asarray(frame,dtype=float)-black)/(white-black),0,1)
     x = np.where(np.isfinite(x),x,0)
-    return np.rint(255*np.arcsinh(8*x)/np.arcsinh(8)).astype(np.uint8)
+    return np.rint(255*(np.arcsinh(strength*x)/np.arcsinh(strength) if strength else x)).astype(np.uint8)
 
 
 def paste_full_field(panel, pixels, black, white, target_xy=None):

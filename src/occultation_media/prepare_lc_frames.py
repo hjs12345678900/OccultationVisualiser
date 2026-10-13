@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 from .read_station_curves import read_lc_curve
 from .read_tangra_stamps import extract_target_stamps
-from .render_detector_field import first_frame_limits, display_pixels
+from .resolve_image_stretch import image_limits, stretch_pixels
 
 
 class LCFrames:
@@ -16,7 +16,7 @@ class LCFrames:
     def __init__(self,cfg,rows,native_times=None):
         self.cfg,self.rows=cfg,rows
         self.paths=[Path(cfg['source'])]
-        self.mapping={};self.records={};self.prepared={};self.limits=None
+        self.mapping={};self.records={};self.prepared={};self.limits=None;self.stretch_info=None
         samples,_,_=read_lc_curve(self.paths[0]);by_frame={r.frame:r for r in samples}
         tolerance=float(cfg['mapping_tolerance_s'])
         offset=float(cfg.get('source_minus_curve_s',0))
@@ -38,8 +38,8 @@ class LCFrames:
         stamps=extract_target_stamps(self.paths[0],{self.rows[i].frame for i in wanted},1)
         for i in wanted:
             pixels=stamps[self.rows[i].frame]
-            if self.limits is None:self.limits=first_frame_limits(pixels)
-            self.prepared[i]=display_pixels(pixels,*self.limits)
+            if self.limits is None:self.limits,self.stretch_info=image_limits(pixels,self.cfg,'LC')
+            self.prepared[i]=stretch_pixels(pixels,self.limits,self.stretch_info)
 
     def close(self):
         """LC decoding uses bounded file reads and retains no open handles."""

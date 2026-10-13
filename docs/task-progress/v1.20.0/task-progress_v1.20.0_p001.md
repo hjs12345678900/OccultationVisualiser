@@ -1,0 +1,7 @@
+# v1.20.0
+
+- TASK-0055: Reproduce all-blank processed-curve image selection using supplied AVI/CSV; correct sampling support and compare caption-safe stretch while preserving saved values. Validation in progress.
+- TASK-0056: Import native PyMovie v1 binary records; verify Unicode header/positions with the independent upstream writer and packaged synthetic jobs. The supplied AVI folder contains no .pymovie file, so the friend’s exact binary-file error remains unconfirmed without its filename/error text.
+- TASK-0057: Verify and release complete Windows/Intel/Apple Silicon packages including native PyOTE imports. Pending.
+
+- Source validation: 104 tests pass. Supplied processed CSV at 160 ms display steps reproduces 0/6 images under the former exposure-only criterion and 6/6 selections under conservative sampling support (outputs/protogeneia_avi_display_validation/selection_regression.json). Caption pixels change full-field white levels but not auto sky levels; first-frame levels are reused and manual display never alters pixels/photometry. Independent upstream PyMovie writer verification retains six exact net signals, UTF-32LE names and static header positions (outputs/pymovie_primary_writer_validation/verification.json). English/Chinese station-editor pages and bottom buttons fit 980×820. New source files are below 200 lines; only the existing legacy renderer remains a 249-line audit warning.
