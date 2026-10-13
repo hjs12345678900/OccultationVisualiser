@@ -104,7 +104,7 @@ def make_station_media(config_path, output_dir=None, verify_only=False):
         selections = [[nearest_sample(s['rows'], t) for s in stations] for t in timeline]
         displayed = [sum(i[k] is not None and i[k] in s['frames'].mapping for i in selections) for k,s in enumerate(stations)]
         if not verify_only and not any(displayed):
-            raise ValueError('No images selected: check display UTC range, original curve and AVI frame-0 mapping / 未选中影像，请检查显示 UTC 范围、曲线和 AVI 第 0 帧对应')
+            raise ValueError('No images selected: check event UTC date, display range, curve and AVI frame-0 mapping / 未选中影像，请检查事件 UTC 日期、显示范围、曲线和 AVI 第 0 帧对应')
         partial = [c for c in coverage if c['matched_images']<c['samples']]
         warnings = [f'{c["name"]}: {c["matched_images"]}/{c["samples"]} source images; missing times stay blank' for c in partial]
         warnings += [f'{s["config"]["name"]}: AVI frame identity declared by user; UTC comes from curve, no independent source UTC verification'

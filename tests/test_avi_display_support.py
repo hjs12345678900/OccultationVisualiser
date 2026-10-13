@@ -27,6 +27,12 @@ class AviDisplayTests(unittest.TestCase):
         rows=[MediaSample(i,start+np.timedelta64(t,'ms'),.04,100) for i,t in enumerate((0,80,100000))]
         self.assertIsNone(nearest_sample(rows,start+np.timedelta64(90000,'ms')))
 
+    def test_short_timestamp_jitter_does_not_blank_regular_sampling(self):
+        start=np.datetime64('2024-05-16','ns')
+        rows=[MediaSample(2*i,start+np.timedelta64(t,'ms'),.04,100) for i,t in enumerate((0,80,160,222,320,400,480,560))]
+        for offset in (40,120,360,440,520):
+            self.assertIsNotNone(nearest_sample(rows,start+np.timedelta64(offset,'ms')))
+
     def test_caption_pixels_do_not_set_avi_auto_white_point(self):
         pixels=np.tile(np.arange(100)%20,(100,1)).astype(np.uint8)
         pixels[85:]=250

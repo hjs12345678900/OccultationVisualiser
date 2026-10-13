@@ -5,3 +5,5 @@
 - TASK-0057: Verify and release complete Windows/Intel/Apple Silicon packages including native PyOTE imports. Pending.
 
 - Source validation: 104 tests pass. Supplied processed CSV at 160 ms display steps reproduces 0/6 images under the former exposure-only criterion and 6/6 selections under conservative sampling support (outputs/protogeneia_avi_display_validation/selection_regression.json). Caption pixels change full-field white levels but not auto sky levels; first-frame levels are reused and manual display never alters pixels/photometry. Independent upstream PyMovie writer verification retains six exact net signals, UTF-32LE names and static header positions (outputs/pymovie_primary_writer_validation/verification.json). English/Chinese station-editor pages and bottom buttons fit 980×820. New source files are below 200 lines; only the existing legacy renderer remains a 249-line audit warning.
+
+- Additional real-data audit: the shortest interval alone (62 ms outlier among normal 80 ms samples) makes the half-cadence display phase blank. Frozen/synthetic v1.20.0 checks passed, but this actual-file regression requires v1.20.1; v1.20.0 will remain a draft.

@@ -378,8 +378,10 @@ fail explicitly. No exposure or per-frame centroid exists in this schema;
 header centroids are static initial positions, with tracking CSV or explicit
 coordinates available separately. No ROI photometry is recomputed.
 
-Display support uses 0.55 times max(recorded exposure, shortest positive saved
-sampling interval), within recording coverage. The conservative interval cap
-preserves long gaps even with only three samples. This only selects a real
+Display support uses 0.55 times max(recorded exposure, median regular saved
+sampling interval), within recording coverage. Regular intervals are at most
+three times the shortest positive observed interval, a display-only long-gap
+guard. Their median tolerates occasional short jitter. This preserves long
+gaps even with only three samples. This only selects a real
 frame; it never changes UTC, shutter duration or counts. `displayed_images`
 records selections and a wholly empty animation selection fails explicitly.

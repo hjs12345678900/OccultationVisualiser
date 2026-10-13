@@ -1,3 +1,7 @@
+# 1.20.1
+
+- Keep normal processed-curve image support despite occasional short timestamp jitter: use the median of regular intervals with a conservative long-gap guard. Reproduce the supplied 62 ms outlier among 80 ms samples and verify the previously all-blank UTC phase displays all six actual frames.
+
 # 1.20.0
 
 - Fix blank image selections when processed curves have sampling intervals longer than single-frame exposure; bound selection conservatively and retain actual frame/UTC labels and long gaps.

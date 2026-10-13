@@ -10,8 +10,10 @@ def nearest_sample(rows, utc):
     """Return nearest actual saved frame within sampling support, preserving gaps.
 
     Each image label retains its actual UTC. Support is 0.55 times the larger
-    of recorded exposure and the shortest saved-sample cadence. This conservative
-    cadence cap prevents a sparse long gap from widening image support. It controls
+    of recorded exposure and the median regular saved-sample cadence. Regular
+    intervals are no longer than three times the shortest observed interval,
+    a display-only guard against long gaps; the median tolerates short jitter.
+    This cadence controls
     display selection only and is never substituted for shutter exposure.
     Outside recording coverage and beyond typical support, images stay blank.
     """
@@ -20,7 +22,9 @@ def nearest_sample(rows, utc):
     index = int(np.searchsorted(times, utc))
     candidates = [i for i in (index-1, index) if 0 <= i < len(rows)]
     best = min(candidates, key=lambda i: abs(int((times[i]-utc)/np.timedelta64(1,'ns'))))
-    cadence = float(np.min(np.diff(times)/np.timedelta64(1,'s'))) if len(rows)>1 else 0
+    intervals = np.diff(times)/np.timedelta64(1,'s')
+    regular = intervals[intervals<=3*np.min(intervals)] if intervals.size else intervals
+    cadence = float(np.median(regular)) if regular.size else 0
     support = max(rows[best].exposure_s,cadence)*.55
     return best if abs(float((times[best]-utc)/np.timedelta64(1,'s'))) <= support else None
 
