@@ -103,10 +103,12 @@ def run():
         with contextlib.redirect_stdout(io.StringIO()):avi_job=verify_avi(root)
         from .self_test_unicode import verify as verify_unicode
         unicode_job=verify_unicode(root)
+        from .self_test_pyote_native import verify as verify_native_pyote
+        native_pyote_job=verify_native_pyote(root)
         from .self_test_shadow import verify as verify_shadow
         with contextlib.redirect_stdout(io.StringIO()):shadow_job=verify_shadow(root)
     return {'ok':True,'system':platform.system(),'architecture':platform.machine(),
             'version':__import__('occultation_media.record_media_run',fromlist=['version']).version(),
             'avi':avi_job,'exports':['AVI','SER','FITS','RAVF','native PyMovie SER'],'languages':['en','zh'],'outputs':['GIF','PNG','MP4'],
             'branding_resources':True,'noise_diagnostics':True,'automatic_metadata_and_utc':True,'source_snapshot_hashes':True,
-            'ffmpeg':ffmpeg_executable(),'adv':adv,'unicode_inputs':unicode_job,'shadow_simulation':shadow_job}
+            'ffmpeg':ffmpeg_executable(),'adv':adv,'unicode_inputs':unicode_job,'native_pyote':native_pyote_job,'shadow_simulation':shadow_job}

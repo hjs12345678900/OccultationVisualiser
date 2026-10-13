@@ -1,6 +1,6 @@
 """Read native B/sigmaB for labels, with an explicit saved-curve fallback."""
 from pathlib import Path
-import json
+from .read_pyote_result import read_pyote_result
 import math
 from .measure_baseline_snr import baseline_snr
 
@@ -9,21 +9,27 @@ def station_snr(cfg, rows, disappearance, reappearance):
     """Return baseline SNR and its provenance, preserving saved native noise.
 
     Native PyOTE B/sigmaB is preferred when both fields are available. Require
-    finite positive mean and single-exposure scatter. Read A only to record
+    finite positive mean and saved scatter. Native text scatter describes fitted
+    readings, possibly block integrated, and is labelled separately from raw frames.
+    Read A only to record
     DNR=(B-A)/sigmaB separately; DNR is never labelled baseline SNR. Otherwise
     use descriptive saved-curve baseline statistics with ``estimated=True``. Unknown
     baseline or zero noise remains unavailable. No model or D/R is refitted.
     """
     if cfg.get('pyote_result'):
         path = Path(cfg['pyote_result'])
-        result = json.loads(path.read_text(encoding='utf-8-sig'))
+        result = read_pyote_result(cfg)
         if 'B' in result and 'sigmaB' in result:
             mean, scatter = float(result['B']), float(result['sigmaB'])
             if not all(math.isfinite(v) and v > 0 for v in (mean, scatter)):
                 raise ValueError(f'{cfg["name"]}: invalid saved baseline mean/noise')
             info = dict(snr=mean/scatter, B=mean, sigmaB=scatter, formula='B/sigmaB',
                         method='saved native PyOTE baseline parameters', estimated=False,
-                        source=str(path), native_mode=cfg.get('native_mode', 'raw'))
+                        source=str(path), native_mode=cfg.get('native_mode', 'raw'),
+                        result_format=result['result_format'],
+                        noise_scope=result.get('noise_scope','saved adapter baseline'),
+                        integration_readings=result.get('integration_readings'),
+                        fitted_cadence_s=result.get('fitted_cadence_s'))
             if result.get('A') is not None:
                 low = float(result['A'])
                 if not math.isfinite(low): raise ValueError('Nonfinite saved event level')
@@ -43,4 +49,8 @@ def snr_label(metric, language='en'):
         if metric.get('source_format')=='tangra_lc':
             return f'SNR {value} '+('（LC 基线）' if language=='zh' else '(LC baseline)')
         return f'SNR ≈ {value} '+('（估算）' if language=='zh' else '(estimated)')
+    if metric.get('noise_scope')=='PyOTE fitted readings':
+        block=metric.get('integration_readings')
+        note=(f'PyOTE {block}读数' if language=='zh' else f'PyOTE {block} readings') if block else ('PyOTE 拟合' if language=='zh' else 'PyOTE fit')
+        return f'SNR {value} ({note})'
     return f'SNR {value}'

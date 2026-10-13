@@ -1,6 +1,6 @@
 # Native curves and absolute UTC station media
 
-For first-time setup, required input files and the supported PyOTE JSON schema, start with the [README](../README.md).
+For first-time setup, required input files and native PyOTE exports, start with the [README](../README.md).
 
 In the desktop app add/edit observers and select their files; JSON editing is optional. The application creates a fresh directory, retaining earlier results. CLI equivalents:
 
@@ -50,22 +50,49 @@ Each station supplies:
 | `mapping_tolerance_s` | Explicit finite nonnegative source/curve residual tolerance, justified by export precision |
 | `source_minus_curve_s` | Optional known native-source minus already-corrected curve UTC; validates correction without applying it twice |
 | `ser_byte_order` | `header` (specification), `little`, or `big`; use a documented override for nonconforming writers |
-| `pyote_result` | Optional saved `native_results.json`; D/R validity, mode, frame identity and UTC agreement are checked |
-| `native_mode` | `raw` (default), `C3` or `C4`, matching the saved PyOTE result |
+| `pyote_result` | Optional native `fit_metrics.txt` or `<name>.pyote_log.txt`, or legacy adapter JSON; target/source, D/R frame identity and UTC agreement are checked |
+| `pyote_fit_index` | Optional positive one-based index among fits matching the target/source; distinct multiple results require a choice |
+| `native_mode` | `raw` (default), `C3` or `C4`, describing the imported curve. Native TXT has no such mode field; only legacy JSON declares it |
 | `camera_settings_file` | Optional capture-settings text file; otherwise detect a nearby `.CameraSettings.txt` |
-| `tracking_csv` | Optional original native CSV for coordinates/defect flags when normalized exports omit them; every frame and UTC must match |
+| `tracking_csv` | Optional original native CSV for coordinates/defect flags when normalized exports omit them; each imported curve frame and UTC must match; tracking may contain additional original frames |
 | `tracking_target_column` | Tracking CSV's target column, defaults to `target_column` |
 | `D_utc/R_utc` | Optional pair of supplied observation UTC boundaries when no native fit is supplied |
 | `timing_source_file` | Optional source report, hashed for provenance |
 | `source_sha256` | Optional original recording hash; changed video is rejected |
-| `target_xy` | Optional Tangra initial source (x,y), zero based; native/LC uses stored per-frame centroids |
+| `target_xy` | Optional fixed source (x,y), zero based; used when native/CSV lacks centroids. LC retains stored positions |
 | `fits_hdu`, `adv_python` | Optional explicit FITS image HDU / compatible ADV decoder executable |
 
 For C3/C4 set `curve` to the saved `native_analysis.csv`, `tracking_csv` to `pymovie_native.csv`, `native_mode` to the saved mode and `pyote_result` to that mode's native results. The normalized values are read exactly as saved; no normalization, smoothing, integration or fitting runs in this tool. Without supplied D/R the curve and fields still render, with no invented event overlay.
 
+## Native PyOTE results
+
+Choose `fit_metrics.txt` (CSV-formatted text with source markers) or a completed
+`<name>.pyote_log.txt` containing `fit metrics for <target-column>`. Files are
+recognized by content, with UTF-8/BOM and CP1252 decoding. Recorder TXT, CSV in
+the result field, binary input and incomplete D/R reports produce explicit errors.
+The actual source basename is compared across Windows/macOS paths; a matching
+`.pyote.csv` is also accepted. A moved folder is allowed. Multiple apertures are
+filtered by `target_column`; repeated distinct fits require `pyote_fit_index`.
+Identical repeats can be imported without choosing. D-only/R-only exports do not
+supply the complete pair required by the current event-overlay workflow.
+
+Metrics have no timestamp-validity flag: the importer checks their saved frames
+and clocks against the curve. Logs require PyOTE's affirmative D/R timestamp
+check. D/R remain exactly as exported, including midnight date resolution; no
+camera delay or half-exposure adjustment is applied to the boundaries. Log
+95% errors are retained separately for each edge. The metrics `time err +/-secs`
+field is preserved as reported; it is not substituted for both log error bars.
+
+`native_results.json` was a name used by our earlier **adapter format**, not a
+standard PyOTE output filename. Old adapter files remain accepted. No filename
+is required for JSON; contents must have `timesAreValid: true`, optional `mode`
+(default raw), numeric `Dframe/Rframe`, and `Dtime/Rtime` in UTC seconds since
+midnight. Optional `B/A/sigmaB` and `xlsxDict.Derr95/Rerr95` retain their prior
+meaning. Do not rename a native TXT to JSON or manufacture this intermediate file.
+
 ## Baseline SNR labels
 
-Each station displays dimensionless per-exposure baseline `SNR = B / sigmaB` beside its coordinates. Saved native PyOTE baseline mean B and noise sigmaB are preferred. Event-drop `DNR = (B-A)/sigmaB` is recorded separately and is never labelled baseline SNR. The noise is single-exposure scatter, not uncertainty in the mean.
+Each station displays dimensionless baseline `SNR = B / sigmaB` beside its coordinates. Saved PyOTE baseline mean B and noise sigmaB are preferred. Native TXT sigmaB describes **fitted readings**, which may be integrated or normalized; labels identify `PyOTE fit` or the recorded number of combined readings. It is not silently assigned to original camera exposures. Log sampling cadence is metadata, never an exposure measurement. Event-drop `DNR = (B-A)/sigmaB` is recorded separately and is never labelled baseline SNR. Scatter is not uncertainty in the mean.
 
 If native baseline parameters are absent, calculate mean and population standard deviation (`ddof=0`) directly from valid saved exposures wholly outside supplied D/R. This includes the net-count series embedded in a Tangra LC: there is no need to re-extract photometry from FITS or export CSV. Exclude exposures straddling either transition. Use the full saved recording, independently of display cuts; apply no smoothing, detrending, clipping, integration or new timing fit. Tangra LC values are labelled `(LC baseline)` / `（LC 基线）`; other fallback curves use `≈ (estimated)` / `≈（估算）`. Missing D/R, fewer than three baseline exposures, or nonpositive mean/scatter produces an unavailable label. `baseline_snr` metadata stores parameters, method and selected frame IDs; input curves/results are hashed. Separately reported software SNR values retain their own labels and source rather than assuming identical definitions.
 

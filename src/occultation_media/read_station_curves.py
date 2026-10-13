@@ -98,7 +98,7 @@ def read_station_curve(cfg, date):
                 if not np.isfinite(frame) or int(frame) != frame: raise ValueError('Integrated/fractional CSV frame unsupported')
                 flux = float(r[cfg['target_column']])
                 name = cfg['target_column'][7:]
-                xy = tuple(float(r[k] or 'nan') for k in (f'xcentroid-{name}',f'ycentroid-{name}')) if f'xcentroid-{name}' in r else None
+                xy = tuple(float(r[k] or 'nan') for k in (f'xcentroid-{name}',f'ycentroid-{name}')) if f'xcentroid-{name}' in r else (tuple(cfg['target_xy']) if cfg.get('target_xy') else None)
                 defect = int(r.get(f'hit-defect-{name}', 0) or 0)
             elif kind == 'tangra_csv':
                 frame = int(r['FrameNo'])
@@ -122,8 +122,12 @@ def read_station_curve(cfg, date):
         tracking_cfg.pop('tracking_csv')
         tracking_cfg['target_column'] = cfg.get('tracking_target_column', cfg['target_column'])
         tracking, track_native, _, _ = read_station_curve(tracking_cfg, date)
-        if len(tracking)!=len(rows) or any(a.frame!=b.frame or a.utc!=b.utc for a,b in zip(rows,tracking)):
-            raise ValueError('Tracking CSV and normalized curve frame/UTC differ')
-        rows = [replace(a,target_xy=b.target_xy,tracking_flag=b.tracking_flag) for a,b in zip(rows,tracking)]
+        by_frame = {r.frame:r for r in tracking}
+        matched = [by_frame.get(r.frame) for r in rows]
+        if any(b is None or a.utc!=b.utc for a,b in zip(rows,matched)):
+            raise ValueError('Tracking CSV and processed curve frame/UTC differ')
+        # PyOTE block exports retain source frame IDs but omit intermediate rows.
+        # Coordinates come from those exact saved frames, without interpolation.
+        rows = [replace(a,target_xy=b.target_xy,tracking_flag=max(a.tracking_flag,b.tracking_flag)) for a,b in zip(rows,matched)]
         info['tracking_source'] = cfg['tracking_csv']
     return rows, native, info, [path]

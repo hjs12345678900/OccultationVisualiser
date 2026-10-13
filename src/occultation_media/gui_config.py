@@ -82,6 +82,9 @@ def build_config(event, observers, quality_only=False):
         from .inspect_observer_metadata import resolve_exposure,resolve_native_mode
         station = dict(name=obs['name'].strip(),native_mode=resolve_native_mode(obs))
         if not station['name']: raise ValueError('Station name required / 请填写站点名称')
+        if obs.get('pyote_fit_index','').strip():
+            station['pyote_fit_index']=int(obs['pyote_fit_index'])
+            if station['pyote_fit_index']<1:raise ValueError('PyOTE fit record must be >=1 / 拟合记录须从 1 开始')
         observer=obs.get('observer','').strip()
         if observer:station['observer']=observer
         from .resolve_station_colors import normalize_color

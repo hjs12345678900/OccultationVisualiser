@@ -1,3 +1,9 @@
+# 1.19.0
+
+- Import native PyOTE `fit_metrics.txt` and `.pyote_log.txt` directly, retaining saved D/R, baseline parameters, log block integration and 95% timing errors. Legacy adapter JSON remains compatible.
+- Match target/source and require explicit selection for distinct repeated fits; reject incomplete, invalid or wrong-format results with readable errors.
+- Clarify bilingual file inputs and label fitted-reading SNR separately from original camera-frame noise. Match processed CSV tracking by exact source frame/UTC, allowing additional raw tracking rows.
+
 # 1.18.1
 
 - Make the observer-name export regression read UTF-8 metadata explicitly on Windows ANSI systems; keep the assertion of exact Chinese/English observer text.

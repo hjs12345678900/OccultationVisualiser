@@ -29,7 +29,7 @@ For an animation, choose a light curve and its matching original recording. Keep
 
 Tangra CSV uses target object 1. PyMovie uses the selected `signal-<target>` column. LC stamps contain the recorded 35×35 target cutout; choose the original recording for a full-field view.
 
-AVI is supported through the bundled FFmpeg decoder. Supply the curve frame ID corresponding to AVI frame 0 and choose the curve timestamp convention; the app never derives absolute UTC or exposure from container FPS. Keep original frame order: edited, integrated or frame-dropped copies need a separately validated frame map and are not supported. AVI timing comes from the curve and is marked as having no independent source UTC verification. MP4 input remains unsupported. FITS sequences need per-frame UTC records. Compatible saved PyOTE result JSON can supply D/R; the supported schema is described in the [configuration reference](docs/native_station_media.md).
+AVI is supported through the bundled FFmpeg decoder. Supply the curve frame ID corresponding to AVI frame 0 and choose the curve timestamp convention; the app never derives absolute UTC or exposure from container FPS. Keep original frame order: edited, integrated or frame-dropped copies need a separately validated frame map and are not supported. AVI timing comes from the curve and is marked as having no independent source UTC verification. MP4 input remains unsupported. FITS sequences need per-frame UTC records. For PyOTE, put `fit_metrics.txt` or `<name>.pyote_log.txt` in **Native PyOTE result TXT**; put the original PyMovie CSV or processed `<name>.pyote.csv` in **Light curve**. No JSON export or renaming is needed. The app imports saved D/R and `B/sigmaB` without refitting. Logs also retain recorded block integration and 95% timing errors. If several fits match the target and curve filename, select the one-based **PyOTE fit record** in Advanced. Legacy adapter JSON remains supported. See the [configuration reference](docs/native_station_media.md).
 
 ## Make your first video
 
@@ -71,7 +71,7 @@ The first-frame field is an optional **Advanced** mapping override for cropped r
 
 Exposure comes from FITS/ADV/RAVF/LC, PyMovie shutter metadata or CameraSettings. SER timestamps describe cadence, not exposure. If no exposure record exists, select CameraSettings or use the advanced exposure override. Older projects retain their explicit overrides.
 
-**Curve type** describes already-exported data: `raw` means original target counts; supported `C3/C4` exports were normalized using the corresponding reference star. Auto reads the saved result's mode, otherwise uses raw. Use a matching analysis CSV and result for C3/C4. The app imports these values without extracting photometry, normalizing or refitting.
+**Curve type** describes already-exported data: `raw` means original target counts; supported `C3/C4` exports were normalized using the corresponding reference star. Auto reads the legacy adapter JSON mode; native TXT has no C3/C4 flag, so select the matching exported curve type explicitly when needed. Use a matching analysis CSV and result for C3/C4. The app imports these values without extracting photometry, normalizing or refitting.
 
 ## Optional synchronized shadow map
 
@@ -104,7 +104,7 @@ uncertainty; it is not an observed occultation classification.
 
 **Noise diagnostics** reads saved curves without decoding images. It displays saved and guarded-baseline SNR separately, along with exposure, binning, camera evidence and available background/mask statistics.
 
-Baseline SNR is `B / sigmaB`, using per-exposure scatter. The diagnostic baseline excludes D−1 s through R+1 s by default; this guard is independent of video padding. Missing D/R leaves identified-baseline statistics unavailable.
+Baseline SNR is `B / sigmaB`. Native TXT noise describes PyOTE fitted readings, which may be integrated; labels identify the fit and recorded integration size. It is not automatically the original camera-frame SNR. Curve diagnostics use the saved curve sampling. The diagnostic baseline excludes D−1 s through R+1 s by default; this guard is independent of video padding. Missing D/R leaves identified-baseline statistics unavailable.
 
 Select two stations to compare their shared absolute UTC baseline. Recordings without overlap are marked unavailable. The spatial-background budget is approximate and does not isolate detector read noise; definitions and assumptions are saved in `quality_report.json`.
 
@@ -116,7 +116,7 @@ Each run creates a new directory. Animation runs save MP4, GIF and PNG previews.
 | --- | --- |
 | Exposure not found | Original recording headers, matching CameraSettings, or the advanced override |
 | UTC mismatch | Observation date, start/midpoint convention and already-applied camera offsets |
-| PyOTE mode mismatch | Matching analysis curve and compatible result JSON |
+| PyOTE mode mismatch | Matching analysis curve and result file |
 | Blank station image | Recording coverage and timestamp audit records |
 | Wrong target marker | Target column, original tracking CSV or advanced target X/Y |
 | Generation failed | The job's `run.log` and failed-run metadata |

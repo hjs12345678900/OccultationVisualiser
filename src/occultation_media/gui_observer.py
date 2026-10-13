@@ -8,7 +8,7 @@ from .gui_localization import Localizer
 from .inspect_observer_metadata import inspect_exposure,resolve_native_mode
 
 DEFAULTS=dict(name='Station',observer='',color='',mode='PyMovie / PyOTE',curve='',source='',pyote_result='',
-              tracking_csv='',exposure_ms='',exposure_mode='auto',target_column='signal-target',source_first_frame='',
+              pyote_fit_index='',tracking_csv='',exposure_ms='',exposure_mode='auto',target_column='signal-target',source_first_frame='',
               predicted_utc='',native_mode='auto',mapping_tolerance_s='0.001',source_minus_curve_s='0',
               ser_byte_order='header',D_utc='',R_utc='',target_xy='',fits_hdu='',timing_source_file='',adv_python='',
               latitude_deg='',longitude_deg='',altitude_m='',camera_settings_file='',avi_timestamp_reference='auto')
@@ -34,7 +34,8 @@ class ObserverDialog:
         self.widgets['color']=color_controls(main,2,self.values['color'],self.ui)
         self.field(main,3,'mode','curve_kind',[('Tangra','Tangra'),('PyMovie / PyOTE','PyMovie / PyOTE')],literal=True)
         for row,key,label in [(4,'curve','curve_input'),(5,'source','source_input'),(6,'pyote_result','pyote_input'),(7,'tracking_csv','tracking_input')]:
-            path_entry(main,self.values[key],row,label,ui=self.ui,source=key=='source')
+            path_entry(main,self.values[key],row,label,ui=self.ui,source=key=='source',
+                       filetypes=[('PyOTE results', '*.txt *.json')] if key=='pyote_result' else None)
         self.field(main,8,'target_column','target_column')
         self.ui.label(main,'auto_exposure').grid(row=9,column=0,sticky='w',pady=6)
         self.exposure_info=ttk.Label(main,wraplength=540);self.exposure_info.grid(row=9,column=1,columnspan=3,sticky='w')
@@ -54,12 +55,14 @@ class ObserverDialog:
         for row,key,label in [(5,'D_utc','d_utc'),(6,'R_utc','r_utc'),(7,'mapping_tolerance_s','tolerance'),(8,'source_minus_curve_s','clock_offset'),(9,'target_xy','target_xy'),(10,'fits_hdu','fits_hdu')]:self.field(advanced,row,key,label)
         self.field(advanced,11,'ser_byte_order','byte_order',[(k,k) for k in ('header','little','big')])
         for row,key,label in [(12,'timing_source_file','timing_report'),(13,'adv_python','adv_python'),(14,'camera_settings_file','camera_settings')]:path_entry(advanced,self.values[key],row,label,ui=self.ui)
-        self.ui.label(advanced,'advanced_help',wraplength=875).grid(row=15,column=0,columnspan=4,sticky='w',pady=6)
+        self.field(advanced,15,'pyote_fit_index','pyote_fit_index')
+        self.ui.label(advanced,'pyote_fit_help',wraplength=875).grid(row=16,column=0,columnspan=4,sticky='w',pady=6)
+        self.ui.label(advanced,'advanced_help',wraplength=875).grid(row=17,column=0,columnspan=4,sticky='w',pady=6)
         buttons=ttk.Frame(self.window);buttons.pack(fill='x',padx=12,pady=8)
         self.ui.button(buttons,'cancel',command=self.window.destroy).pack(side='right')
         self.ui.button(buttons,'save_station',command=self.save).pack(side='right',padx=8)
         for key in ('curve','source','pyote_result','fits_hdu','camera_settings_file','adv_python'):self.values[key].trace_add('write',self.schedule_inspection)
-        for key in ('native_mode','exposure_mode','exposure_ms'):self.values[key].trace_add('write',self.refresh_metadata)
+        for key in ('native_mode','exposure_mode','exposure_ms','target_column','pyote_fit_index'):self.values[key].trace_add('write',self.refresh_metadata)
         self.ui.callbacks.append(self.translate_dynamic)
         self.window.bind('<Destroy>',self.destroy,add='+')
         self.translate_dynamic();self.schedule_inspection()

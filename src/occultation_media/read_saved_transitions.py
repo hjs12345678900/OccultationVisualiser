@@ -1,6 +1,6 @@
 """Use saved PyOTE D/R UTC without re-fitting or adding half an exposure."""
 from pathlib import Path
-import json
+from .read_pyote_result import read_pyote_result
 import numpy as np
 from .utc_conventions import utc_ns
 
@@ -8,7 +8,7 @@ from .utc_conventions import utc_ns
 def saved_transitions(cfg, rows):
     """Return (D UTC[ns], R UTC[ns], provenance), or no overlay if absent.
 
-    Native results require timesAreValid, integral-source frame identity and
+    Saved results require valid or importer-checked times, source frame identity and
     transition times agreeing with Dframe/Rframe within two exposures. Resolve
     each date independently near its original frame, including midnight.
     Explicit D_utc/R_utc are allowed only as a pair; supplied report values are
@@ -16,7 +16,7 @@ def saved_transitions(cfg, rows):
     """
     if cfg.get('pyote_result'):
         path = Path(cfg['pyote_result'])
-        result = json.loads(path.read_text(encoding='utf-8-sig'))
+        result = read_pyote_result(cfg)
         if result.get('timesAreValid') is not True: raise ValueError('Saved PyOTE times are invalid')
         if cfg.get('native_mode', 'raw') != result.get('mode', 'raw'):
             raise ValueError('Selected native curve mode differs from saved PyOTE result')
@@ -35,7 +35,13 @@ def saved_transitions(cfg, rows):
                 raise ValueError('Saved transition UTC disagrees with its curve frame')
             times.append(value)
         provenance = dict(method='saved native PyOTE D/R', path=str(path), mode=result.get('mode'),
-                          errors95_s={e:result.get('xlsxDict',{}).get(e+'err95') for e in ('D','R')})
+                          errors95_s={e:result.get('xlsxDict',{}).get(e+'err95') for e in ('D','R')},
+                          result_format=result['result_format'],
+                          validity_evidence=result.get('validity_evidence','adapter timesAreValid'),
+                          timestamp_assumption=result.get('timestamp_assumption','unrecorded'),
+                          camera_corrections_applied_by_importer=False,
+                          reported_time_error_s=result.get('reported_time_error_s'),
+                          fit_record=result.get('fit_record'))
     elif cfg.get('D_utc') is not None or cfg.get('R_utc') is not None:
         times = [utc_ns(cfg[e+'_utc']) for e in ('D','R')]
         provenance = dict(method='supplied observation times', source=cfg.get('timing_source_file'))

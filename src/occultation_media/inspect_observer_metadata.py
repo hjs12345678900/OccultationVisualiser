@@ -1,6 +1,6 @@
 """Read recorded exposure evidence for the desktop without estimating cadence."""
 from pathlib import Path
-import json
+from .read_pyote_result import read_pyote_result
 import re
 import numpy as np
 
@@ -86,7 +86,7 @@ def resolve_native_mode(obs):
         if chosen not in ('raw','C3','C4'):raise ValueError('Unsupported saved curve mode')
         return chosen
     if obs.get('pyote_result'):
-        result=json.loads(Path(obs['pyote_result']).expanduser().read_text(encoding='utf-8-sig'))
+        result=read_pyote_result(obs)
         mode=result.get('mode','raw')
         if mode not in ('raw','C3','C4'):raise ValueError('Unsupported saved curve mode')
         return mode

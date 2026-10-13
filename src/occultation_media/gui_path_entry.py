@@ -2,13 +2,13 @@
 from tkinter import ttk,filedialog,messagebox
 
 
-def path_entry(parent,variable,row,label,directory=False,ui=None,source=False):
+def path_entry(parent,variable,row,label,directory=False,ui=None,source=False,filetypes=None):
     """Attach one path entry; source inputs additionally accept FITS folders."""
     caption=ui.label(parent,label) if ui else ttk.Label(parent,text=label)
     caption.grid(row=row,column=0,sticky='w',pady=3)
     entry=ttk.Entry(parent,textvariable=variable,width=45);entry.grid(row=row,column=1,sticky='ew',pady=3)
     def choose(folder=directory):
-        value=filedialog.askdirectory(parent=parent) if folder else filedialog.askopenfilename(parent=parent)
+        value=filedialog.askdirectory(parent=parent) if folder else filedialog.askopenfilename(parent=parent,**({"filetypes":filetypes} if filetypes else {}))
         if value:variable.set(value)
     button=ui.button(parent,'browse',command=choose) if ui else ttk.Button(parent,text='Browse',command=choose)
     button.grid(row=row,column=2,padx=4)
