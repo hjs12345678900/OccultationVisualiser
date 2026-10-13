@@ -1,3 +1,8 @@
+# 1.22.1
+
+- Keep raw UTC audit labels ASCII so Windows ANSI console output cannot abort verification or generation. Translate these labels in the desktop view. Read new audit regression fixtures explicitly as UTF-8.
+- v1.22.0 remains a draft after the Windows console regression; v1.22.1 carries the prediction event import and UTC diagnostics.
+
 # 1.22.0
 
 - Import or paste one complete Occult prediction from the event form to fill asteroid name, target star and UTC date. Validate before updating any fields; retain editability and unrelated settings.

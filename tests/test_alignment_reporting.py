@@ -66,12 +66,12 @@ class AlignmentReportingTests(unittest.TestCase):
                 self.assertIn('709 samples; 0 mapped real images', log.getvalue())
                 self.assertNotIn('原始影像', error_text(message, 'English'))
                 self.assertNotIn('No source images match', error_text(message, '中文'))
-                report = json.loads((out/'alignment_report.json').read_text())['stations'][0]
+                report = json.loads((out/'alignment_report.json').read_text(encoding='utf-8'))['stations'][0]
                 self.assertEqual(report['matched_images'], 0)
                 self.assertEqual(report['source_format'], 'RAVF')
                 self.assertEqual(report['mapping_tolerance_s'], .001)
                 self.assertLess(report['closest_residual_s'], -8*86400)
-                run = json.loads((out/'run_metadata.json').read_text())
+                run = json.loads((out/'run_metadata.json').read_text(encoding='utf-8'))
                 self.assertEqual(run['status'], 'failed')
                 self.assertTrue(run['input_integrity_verified'])
                 self.assertEqual(len(run['input_files']), 3)
@@ -85,7 +85,7 @@ class AlignmentReportingTests(unittest.TestCase):
             config = self.save_config(root, cfg)
             with contextlib.redirect_stdout(io.StringIO()):
                 make_station_media(config, root/'verified', verify_only=True)
-            meta = json.loads((root/'verified/media_metadata.json').read_text())
+            meta = json.loads((root/'verified/media_metadata.json').read_text(encoding='utf-8'))
             self.assertEqual(meta['stations'][0]['matched_images'], 709)
             self.assertEqual(meta['stations'][0]['residual_min_s'], 0)
             cfg.update(window_mode='manual', start_utc='2026-10-04T09:30:26.04997',
@@ -93,7 +93,7 @@ class AlignmentReportingTests(unittest.TestCase):
             config = self.save_config(root, cfg)
             with contextlib.redirect_stdout(io.StringIO()):
                 make_station_media(config, root/'export')
-            meta = json.loads((root/'export/media_metadata.json').read_text())
+            meta = json.loads((root/'export/media_metadata.json').read_text(encoding='utf-8'))
             self.assertEqual(meta['stations'][0]['displayed_images'], 6)
             self.assertTrue(meta['no_event_time_shift'])
             self.assertTrue(Path(meta['outputs']['en']['mp4']).is_file())
@@ -104,12 +104,27 @@ class AlignmentReportingTests(unittest.TestCase):
             cfg, _, curve = self.write_observation(root)
             cfg['date_utc'] = '2026-10-04'
             other = root/'other.csv'
-            other.write_text(curve.read_text().replace('[09:', '[10:'), encoding='utf-8')
+            other.write_text(curve.read_text(encoding='utf-8').replace('[09:', '[10:'), encoding='utf-8')
             cfg['stations'].append({**cfg['stations'][0], 'name':'Later', 'curve':str(other)})
             cfg.update(window_mode='manual', start_utc='2026-10-04T09:30:26.04997',
                        end_utc='2026-10-04T09:30:27.04997')
             with contextlib.redirect_stdout(io.StringIO()):
                 make_station_media(self.save_config(root,cfg), root/'partial', verify_only=True)
-            meta = json.loads((root/'partial/media_metadata.json').read_text())
+            meta = json.loads((root/'partial/media_metadata.json').read_text(encoding='utf-8'))
             self.assertEqual([s['matched_images'] for s in meta['stations']], [709,0])
             self.assertTrue(meta['warnings'])
+
+    def test_timestamp_verification_writes_to_a_strict_windows_ansi_console(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cfg, _, _ = self.write_observation(root)
+            cfg['date_utc'] = '2026-10-04'
+            raw = io.BytesIO()
+            with io.TextIOWrapper(raw, encoding='cp1252', errors='strict') as console:
+                with contextlib.redirect_stdout(console):
+                    make_station_media(self.save_config(root,cfg), root/'ansi', verify_only=True)
+                console.flush()
+                output = raw.getvalue().decode('cp1252')
+            self.assertIn('709 mapped real images', output)
+            self.assertIn('Source UTC: 2026-10-04', output)
+            self.assertIn('原始影像 UTC: 2026-10-04', error_text(output,'中文'))

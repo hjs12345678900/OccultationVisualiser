@@ -34,15 +34,16 @@ def alignment_evidence(station):
 def alignment_text(evidence):
     """Format station UTC evidence for logs/errors, retaining exact timestamps.
 
-    Labels are bilingual and localized at the existing GUI display boundary.
+    Raw labels are ASCII for Windows ANSI console compatibility; the existing
+    GUI display boundary translates them without changing recorded evidence.
     The source range remains explicit when image matching produces zero records.
     """
-    text = (f'{evidence["name"]}: Curve UTC / 曲线 UTC: '
+    text = (f'{evidence["name"]}: Curve UTC: '
             f'{evidence["curve_start_utc"]} .. {evidence["curve_end_utc"]}')
     if evidence['source_start_utc'] is not None:
-        text += (f'\nSource UTC / 原始影像 UTC: {evidence["source_start_utc"]} .. '
+        text += (f'\nSource UTC: {evidence["source_start_utc"]} .. '
                  f'{evidence["source_end_utc"]}')
     residual = evidence.get('closest_residual_s')
     if residual is not None:
-        text += f'\nClosest UTC residual (s) / 最近 UTC 偏差（秒）: {residual:g}'
+        text += f'\nClosest UTC residual (s): {residual:g}'
     return text
