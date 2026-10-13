@@ -22,14 +22,14 @@ For an animation, choose a light curve and its matching original recording. Keep
 
 | Light curve | Matching images |
 | --- | --- |
-| Tangra CSV | ADV2, SER, RAVF, timed FITS sequence, or matching Tangra LC target stamps |
+| Tangra CSV | AVI (explicit frame mapping), ADV2, SER, RAVF, timed FITS sequence, or matching Tangra LC target stamps |
 | Tangra LC with recorded times | Original recording, or the target stamps embedded in the LC file |
-| PyMovie CSV | Original ADV2, SER, RAVF or timed FITS sequence |
+| PyMovie CSV | AVI (explicit frame mapping), original ADV2, SER, RAVF or timed FITS sequence |
 | Saved C3/C4 analysis CSV | Original recording; optionally the original tracking CSV if positions are absent |
 
 Tangra CSV uses target object 1. PyMovie uses the selected `signal-<target>` column. LC stamps contain the recorded 35×35 target cutout; choose the original recording for a full-field view.
 
-AVI/MP4 are not supported as observation inputs. FITS sequences need per-frame UTC records. Compatible saved PyOTE result JSON can supply D/R; the supported schema is described in the [configuration reference](docs/native_station_media.md).
+AVI is supported through the bundled FFmpeg decoder. Supply the curve frame ID corresponding to AVI frame 0 and choose the curve timestamp convention; the app never derives absolute UTC or exposure from container FPS. Keep original frame order: edited, integrated or frame-dropped copies need a separately validated frame map and are not supported. AVI timing comes from the curve and is marked as having no independent source UTC verification. MP4 input remains unsupported. FITS sequences need per-frame UTC records. Compatible saved PyOTE result JSON can supply D/R; the supported schema is described in the [configuration reference](docs/native_station_media.md).
 
 ## Make your first video
 
@@ -39,6 +39,10 @@ AVI/MP4 are not supported as observation inputs. FITS sequences need per-frame U
 4. Click **Verify timestamps** to check agreement between the recorded image and curve times.
 5. Click **Generate**, then **Open output folder** to view the MP4, GIF and PNG previews.
 
+Each station has a separate optional **Observer** field. Edit it below the station name; supplied credits appear above that station’s light curve and are saved in project/configuration files and media metadata. Blank credits are hidden. Observer names do not affect path ordering or map labels.
+
+Each station also has an optional **Station color** field. Use **Choose color…**, enter `#RRGGBB`, or leave it blank for automatic assignment. **Automatic** clears a manual choice. The same color follows the station through sorting and appears in curves, image labels/borders and map markers/legend; projects preserve the choice.
+
 Use **Save project / Open project** to reuse inputs. The top-right **中文 / English** selector changes the interface language; **Export language** independently chooses Chinese, English or both for the media.
 
 ### Time range and playback
@@ -46,11 +50,14 @@ Use **Save project / Open project** to reuse inputs. The top-right **中文 / En
 | Setting | Meaning |
 | --- | --- |
 | Full recording coverage | Use the saved curves' recording range. No typed start/end UTC or D/R is required. |
-| D/R event windows | Keep a selected number of seconds before disappearance D and after reappearance R. Default padding is 10 seconds. Each station needs saved or supplied D/R. |
+| D/R event windows | Keep a selected number of seconds before disappearance D and after reappearance R. Default padding is 5 seconds (new project default). Each station needs saved or supplied D/R. |
 | Custom start/end UTC | Crop the displayed video, for example 09:54:20–09:54:45 UTC. Across midnight, include the end date: `2026-09-13T00:00:10`. |
+| Accelerate gaps | Default: traverse the entire UTC gap at 50× speed, with continuous shadow motion; D/R windows remain at normal speed. The multiplier is adjustable. Shading, double slashes and a speed label mark the compressed interval on the UTC axis. |
 | Skip gaps | Omit gaps between retained recording/event windows. The clock still shows absolute UTC; axis breaks mark the jump. |
 | Real event speed | Play retained intervals at their recorded time scale. |
 | Set total video duration | Rescale playback to the chosen length, such as 20 seconds. Recorded UTC and D/R remain unchanged. |
+
+Choose **Path north side → south side** to arrange stations by signed transverse distance to the predicted path. Import prediction elements even if the map is disabled. **Latitude north → south** remains a separate option.
 
 Stations are synchronized by absolute UTC. A station without an image at the displayed time stays blank. MP4 duration is quantized to 25 fps; GIF duration uses centiseconds.
 
@@ -72,11 +79,20 @@ Below the job log, enable **Add synchronized map below video/GIF results**, then
 open **Prediction elements**. Choose one `.occelmnt`/XML event or paste its full
 XML. An example Altona prediction is included in `examples/`.
 
-The exported video adds a map below the curves/images. The green footprint is
-the predicted circular shadow at the displayed UTC; colored dots mark stations
-with coordinates. The adjacent station list shows the selected original frame,
-its corrected exposure midpoint, and predicted separation/coverage. Locations
-may remain unknown. The map renders offline from bundled coastlines.
+Choose **Map view**: **Full shadow path** (default) keeps the whole clip's path
+and stations in view; **Follow asteroid** keeps the shadow center in the middle
+as geography and stations move past. Follow mode uses a fixed zoom throughout
+the clip. The choice is saved with the project and applies to MP4, GIF and PNG.
+
+The exported video adds a full-width map below the curves/images. Geography
+is reprojected along the shadow path so motion runs left to right. The viewport
+zooms to the shadow corridor, and the dark circular silhouette moves at the
+displayed UTC. Colored station dots and the compact legend match the curve rows;
+there is no information sidebar. Major-city labels and a geographic north arrow follow the same rotated projection.
+The two explanatory lines below the station rows are removed. The map renders
+offline from bundled Natural Earth coastlines and cities.
+
+`station_path_order.json` records north-positive nominal path offsets (km) and each station’s predicted closest-approach UTC. The calculation includes Earth rotation and does not use measured D/R to align stations.
 
 `shadow_frame_positions.csv` gives positions for every verified original frame,
 including corrected curve UTC and separate source UTC. `shadow_simulation.json`
