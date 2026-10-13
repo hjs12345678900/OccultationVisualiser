@@ -57,3 +57,5 @@
 - [v1.20.0 p001](v1.20.0/task-progress_v1.20.0_p001.md): TASK-0055–0057.
 
 - [v1.20.1 p001](v1.20.1/task-progress_v1.20.1_p001.md): TASK-0058.
+
+- [v1.21.0 p001](v1.21.0/task-progress_v1.21.0_p001.md): TASK-0059.

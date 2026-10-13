@@ -2,6 +2,7 @@
 from pathlib import Path
 import csv
 import tkinter as tk
+from .gui_hover_help import attach_help
 from tkinter import ttk,messagebox
 from .gui_path_entry import path_entry
 from .gui_localization import Localizer
@@ -78,6 +79,7 @@ class ObserverDialog:
             widget=ttk.Combobox(parent,textvariable=self.values[key],values=[v for v,_ in choices],state='readonly')
         elif choices:widget=self.ui.combo(parent,self.values[key],choices,width=40)
         else:widget=ttk.Entry(parent,textvariable=self.values[key])
+        attach_help(widget,self.ui,label)
         widget.grid(row=row,column=1,sticky='ew',pady=3);self.widgets[key]=widget
 
     def schedule_inspection(self,*_):

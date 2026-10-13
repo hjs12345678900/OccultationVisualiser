@@ -1,6 +1,7 @@
 """Lay out the shared event form and its visible language selector."""
 from datetime import datetime,timezone
 import tkinter as tk
+from .gui_hover_help import attach_help
 from tkinter import ttk
 from .gui_path_entry import path_entry
 from .gui_timeline import timeline_controls
@@ -42,10 +43,10 @@ def build_workspace(app):
     for i,(key,label,default) in enumerate([('event','event_name',''),('target','target_name',''),('date_utc','utc_date',datetime.now(timezone.utc).strftime('%Y-%m-%d')),('step_s','display_step','0.2')]):
         row,col=divmod(i,2);app.fields[key]=tk.StringVar(value=default)
         ui.label(event,label).grid(row=row,column=col*2,sticky='w',padx=4,pady=3)
-        ttk.Entry(event,textvariable=app.fields[key]).grid(row=row,column=col*2+1,sticky='ew',padx=4)
+        attach_help(ttk.Entry(event,textvariable=app.fields[key]),ui,label).grid(row=row,column=col*2+1,sticky='ew',padx=4)
     app.fields['language']=tk.StringVar(value='both')
     ui.label(event,'export_language').grid(row=2,column=0,sticky='w',padx=4)
-    ui.combo(event,app.fields['language'],[(k,k) for k in ('both','zh','en')]).grid(row=2,column=1,sticky='ew')
+    attach_help(ui.combo(event,app.fields['language'],[(k,k) for k in ('both','zh','en')]),ui,'export_language').grid(row=2,column=1,sticky='ew')
     for c in (1,3):event.columnconfigure(c,weight=1)
     ui.label(event,'event_help',wraplength=1000).grid(row=3,column=0,columnspan=4,sticky='w',pady=4)
     app.timeline_widgets=timeline_controls(body,app.fields,ui)

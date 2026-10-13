@@ -1,5 +1,6 @@
 """Expose independent recording crops, playback, gap and location preferences."""
 import tkinter as tk
+from .gui_hover_help import attach_help
 from tkinter import ttk
 
 DEFAULTS=dict(window_mode='dr',event_padding_s='5',skip_gaps='accelerate',gap_speed='50',
@@ -18,6 +19,7 @@ def timeline_controls(parent,fields,ui):
         row,col=divmod(i,2);fields[key]=tk.StringVar(value=DEFAULTS[key])
         ui.label(panel,label).grid(row=row,column=col*2,sticky='w',padx=4,pady=3)
         widget=ui.combo(panel,fields[key],choices[key],width=27) if key in choices else ttk.Entry(panel,textvariable=fields[key])
+        attach_help(widget,ui,label)
         widget.grid(row=row,column=col*2+1,sticky='ew',padx=4);widgets[key]=widget
     for col in (1,3):panel.columnconfigure(col,weight=1)
     help_label=ttk.Label(panel,wraplength=1000);help_label.grid(row=5,column=0,columnspan=4,sticky='w',pady=4)

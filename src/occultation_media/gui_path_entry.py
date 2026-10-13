@@ -1,4 +1,5 @@
 """Choose or drop paths, using the active interface language."""
+from .gui_hover_help import attach_help
 from tkinter import ttk,filedialog,messagebox
 
 
@@ -22,4 +23,5 @@ def path_entry(parent,variable,row,label,directory=False,ui=None,source=False,fi
             if len(paths)==1:variable.set(paths[0])
             else:messagebox.showerror('Input','Choose one file or folder',parent=parent)
         entry.dnd_bind('<<Drop>>',drop)
+    attach_help(entry,ui,label)
     return entry

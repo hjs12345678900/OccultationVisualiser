@@ -178,3 +178,9 @@ python -m pip install -e ".[build]"
 Run `Build-Windows.bat` or `Build-Mac.command` on the target platform. The Mac script builds for the running Python architecture (arm64 on M-series Macs). To explicitly build Intel, run `python3 build_tools/create_macos_env.py --architecture x86_64` with a universal2 Python. Apple Silicon builds compile the included, pinned ADVCore source and include its MPL notice; ADV2 support is native too. Source-only ARM runs can use `python build_tools/prepare_adv_bundle.py` followed by `PYTHONPATH=build_vendor python launch.py`. The supported build runtime is Python 3.13 with Tcl/Tk 8.6; the drag-and-drop dependency is pinned to its compatible version. Release tags trigger Windows/macOS packaging and frozen-app self-tests through GitHub Actions. Archives include both user guides, example configurations and artwork.
 
 See [CHANGELOG.md](CHANGELOG.md) for releases and [THIRD_PARTY.md](THIRD_PARTY.md) for dependency licenses. The previous `occultation-media` commands and Python import `occultation_media` remain compatible.
+
+### Input help / 输入提示
+
+Hover over an input or its label for a moment (or focus it with Tab) to see supported formats, required/optional conditions and where to find the file. Help follows the UI language. Press Escape or move away to dismiss.
+
+将鼠标停在输入框或标签上片刻（也可按 Tab 聚焦），即可查看支持格式、必填/可选条件以及文件所在位置。提示随界面中英文切换；移开鼠标或按 Esc 关闭。

@@ -1,6 +1,7 @@
 """Optional station color entry, native picker and reset-to-automatic button."""
 import tkinter as tk
 from tkinter import ttk, colorchooser
+from .gui_hover_help import attach_help
 from .resolve_station_colors import normalize_color, PALETTE
 
 
@@ -10,6 +11,7 @@ def color_controls(parent, row, variable, ui):
     frame=ttk.Frame(parent)
     frame.grid(row=row,column=1,columnspan=3,sticky='ew',pady=3)
     entry=ttk.Entry(frame,textvariable=variable,width=14)
+    attach_help(entry,ui,'station_color')
     entry.pack(side='left')
     swatch=tk.Canvas(frame,width=28,height=20,highlightthickness=0)
     swatch.pack(side='left',padx=6)

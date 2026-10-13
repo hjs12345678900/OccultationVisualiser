@@ -21,7 +21,8 @@ class Localizer:
     def text(self,key):return translate(key,self.language.get())
 
     def bind(self,widget,key):
-        self.captions.append((widget,key));widget.configure(text=self.text(key));return widget
+        from .gui_hover_help import attach_help
+        self.captions.append((widget,key));widget.configure(text=self.text(key));return attach_help(widget,self,key)
 
     def label(self,parent,key,**kwargs):return self.bind(ttk.Label(parent,**kwargs),key)
 

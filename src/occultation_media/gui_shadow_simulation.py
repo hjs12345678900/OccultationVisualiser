@@ -1,5 +1,6 @@
 """Optional desktop controls for a synchronized nominal-shadow map in exports."""
 import tkinter as tk
+from .gui_hover_help import attach_help
 from tkinter import ttk, filedialog, messagebox
 from .read_occult_prediction import form_settings
 
@@ -17,7 +18,7 @@ def simulation_controls(parent, fields, ui):
     ui.button(row,'shadow_configure',command=lambda:PredictionDialog(parent,fields,ui)).pack(side='right')
     view=ttk.Frame(panel);view.pack(fill='x',pady=(5,0))
     ui.label(view,'shadow_view').pack(side='left',padx=(0,8))
-    ui.combo(view,fields['shadow_view_mode'],[('full_path','shadow_view_full'),('follow_shadow','shadow_view_follow')],width=26).pack(side='left')
+    attach_help(ui.combo(view,fields['shadow_view_mode'],[('full_path','shadow_view_full'),('follow_shadow','shadow_view_follow')],width=26),ui,'shadow_view').pack(side='left')
     summary=ttk.Label(panel,wraplength=1020);summary.pack(anchor='w',pady=(4,0))
     def refresh(*_):
         file=fields['shadow_prediction_file'].get()
@@ -39,10 +40,11 @@ class PredictionDialog:
         self.file=tk.StringVar(value=fields['shadow_prediction_file'].get())
         ttk.Label(body,text=ui.text('shadow_file')).pack(anchor='w')
         row=ttk.Frame(body);row.pack(fill='x',pady=5)
-        ttk.Entry(row,textvariable=self.file).pack(side='left',fill='x',expand=True)
+        attach_help(ttk.Entry(row,textvariable=self.file),ui,'shadow_file').pack(side='left',fill='x',expand=True)
         ttk.Button(row,text=ui.text('browse'),command=self.choose_file).pack(side='left',padx=6)
         ttk.Label(body,text=ui.text('shadow_xml_label')).pack(anchor='w',pady=(6,3))
         self.xml=tk.Text(body,height=14,wrap='word');self.xml.pack(fill='both',expand=True)
+        attach_help(self.xml,ui,'shadow_xml_label')
         self.xml.insert('1.0',fields['shadow_xml'].get())
         ttk.Label(body,text=ui.text('shadow_model_help'),wraplength=870).pack(anchor='w',pady=6)
         actions=ttk.Frame(body);actions.pack(fill='x')

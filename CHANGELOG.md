@@ -1,3 +1,7 @@
+# 1.21.0
+
+- Add bilingual hover/focus help for desktop inputs, including supported files, where to find them, required/optional conditions, UTC, exposure and display settings. Cards dismiss on leaving, editing, Escape, language changes and window closure without taking focus.
+
 # 1.20.1
 
 - Keep normal processed-curve image support despite occasional short timestamp jitter: use the median of regular intervals with a conservative long-gap guard. Reproduce the supplied 62 ms outlier among 80 ms samples and verify the previously all-blank UTC phase displays all six actual frames.
