@@ -19,7 +19,7 @@ class ObserverDialog:
     """Separate required files, automatically read metadata, and optional settings."""
     def __init__(self,root,values,on_save,language=None):
         self.window=tk.Toplevel(root);self.window.transient(root);self.window.grab_set()
-        self.language=language if language is not None else tk.StringVar(value='中文')
+        self.language=language if language is not None else tk.StringVar(value='English')
         self.ui=Localizer(self.window,self.language);self.on_save=on_save
         self.values={k:tk.StringVar(value=str(values.get(k,v))) for k,v in DEFAULTS.items()}
         self.metadata=None;self.metadata_error=None;self.pending=None;self.widgets={}

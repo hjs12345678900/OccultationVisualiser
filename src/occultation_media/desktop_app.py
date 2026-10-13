@@ -17,7 +17,7 @@ class App(JobControls):
     """Shared event fields and independently editable observer inputs."""
     def __init__(self,root):
         self.root=root;self.process=None;self.output=None;self.observers=[]
-        self.ui_language=tk.StringVar(value='中文');self.status_key='idle'
+        self.ui_language=tk.StringVar(value='English');self.status_key='idle'
         self.labels=[];self.combos=[];self.fields={}
         self.i18n=Localizer(root,self.ui_language)
         build_workspace(self)

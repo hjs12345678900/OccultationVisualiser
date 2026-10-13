@@ -184,3 +184,6 @@ See [CHANGELOG.md](CHANGELOG.md) for releases and [THIRD_PARTY.md](THIRD_PARTY.m
 Hover over an input or its label for a moment (or focus it with Tab) to see supported formats, required/optional conditions and where to find the file. Help follows the UI language. Press Escape or move away to dismiss.
 
 将鼠标停在输入框或标签上片刻（也可按 Tab 聚焦），即可查看支持格式、必填/可选条件以及文件所在位置。提示随界面中英文切换；移开鼠标或按 Esc 关闭。
+
+The interface starts in English. Use the top-right language selector for Chinese; opening a saved project restores its saved interface language.
+界面默认英文；右上角可切换中文，打开项目时恢复项目保存的界面语言。

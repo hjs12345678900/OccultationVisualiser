@@ -1,3 +1,7 @@
+# 1.21.1
+
+- Start the desktop UI in English by default, including contextual help. Retain live language switching and saved-project language preferences. Includes all v1.21.0 hover guidance.
+
 # 1.21.0
 
 - Add bilingual hover/focus help for desktop inputs, including supported files, where to find them, required/optional conditions, UTC, exposure and display settings. Cards dismiss on leaving, editing, Escape, language changes and window closure without taking focus.
