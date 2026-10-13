@@ -49,10 +49,11 @@ def build_config(event, observers, quality_only=False):
     date = event['date_utc'].strip()
     window={'D/R 周围':'dr','手动 UTC':'manual','完整录制范围':'full'}.get(event.get('window_mode'),event.get('window_mode','manual'))
     playback={'真实时间':'real_time','指定时长':'fixed_duration'}.get(event.get('playback_mode'),event.get('playback_mode','real_time'))
-    order={'北 → 南':'north_to_south','输入顺序':'input'}.get(event.get('station_order'),event.get('station_order','input'))
+    order={'路径北侧 → 南侧':'path_north_to_south','北 → 南':'north_to_south','输入顺序':'input'}.get(event.get('station_order'),event.get('station_order','input'))
     skip=event.get('skip_gaps',False)
+    gap_mode={'加速空档':'accelerate','跳过':'skip','保留':'keep'}.get(skip,skip) if isinstance(skip,str) else ('skip' if skip else 'keep')
     if isinstance(skip,str):
-        if skip not in ('跳过','保留','skip','keep'): raise ValueError('Choose skip or keep gaps')
+        if gap_mode not in ('skip','keep','accelerate'): raise ValueError('Choose skip, keep or accelerate gaps')
         skip=skip in ('跳过','skip')
     start, stop = ((full_utc(date,event[k]) for k in ('start_utc','end_utc')) if window=='manual' and not quality_only else ('',''))
     step = number(event,'step_s')
@@ -60,15 +61,19 @@ def build_config(event, observers, quality_only=False):
     if window not in ('manual','dr','full') or playback not in ('real_time','fixed_duration'):
         raise ValueError('Choose window and playback mode')
     if step < .01 or (window=='manual' and not quality_only and utc_ns(stop)<=utc_ns(start)): raise ValueError('Check UTC window and display step')
-    if window=='manual' and not skip and not quality_only:
+    if window=='manual' and gap_mode=='keep' and not quality_only:
         count = int((utc_ns(stop)-utc_ns(start))/np.timedelta64(1,'ns'))//round(step*1e9)+1
         if not 2<=count<=2000: raise ValueError('Choose 2–2000 displayed frames / 调整时间范围或显示间隔')
     if not event['output_root'].strip(): raise ValueError('Choose output folder / 请选择输出目录')
     cfg = dict(event=re.sub(r'[^\w .()-]','_',event['event'].strip()),target=event['target'].strip(),
                date_utc=date,start_utc=start,end_utc=stop,step_s=step,language=event['language'],
                output_root=str(Path(event['output_root']).expanduser().resolve()),alignment='absolute_utc',stations=[])
-    cfg.update(window_mode=window,event_padding_s=number(event,'event_padding_s',10),skip_gaps=skip,
+    cfg.update(window_mode=window,event_padding_s=number(event,'event_padding_s',5),skip_gaps=skip,
                playback_mode=playback,station_order=order)
+    cfg['gap_mode']=gap_mode
+    if gap_mode=='accelerate':
+        cfg['gap_speed']=number(event,'gap_speed',50)
+        if cfg['gap_speed']<=1:raise ValueError('Gap acceleration must be greater than 1x')
     if cfg['event_padding_s']<0: raise ValueError('D/R padding must be nonnegative / 前后秒数不能为负')
     if playback=='fixed_duration':
         cfg['video_duration_s']=number(event,'video_duration_s')
@@ -76,7 +81,12 @@ def build_config(event, observers, quality_only=False):
     for obs in observers:
         from .inspect_observer_metadata import resolve_exposure,resolve_native_mode
         station = dict(name=obs['name'].strip(),native_mode=resolve_native_mode(obs))
-        if not station['name']: raise ValueError('Observer name required / 请填写观测者姓名')
+        if not station['name']: raise ValueError('Station name required / 请填写站点名称')
+        observer=obs.get('observer','').strip()
+        if observer:station['observer']=observer
+        from .resolve_station_colors import normalize_color
+        color=normalize_color(obs.get('color'))
+        if color:station['color']=color
         for key in ('curve','source','pyote_result','tracking_csv','timing_source_file','adv_python','camera_settings_file'):
             if obs.get(key,'').strip():
                 path=Path(obs[key]).expanduser().resolve()
@@ -96,6 +106,18 @@ def build_config(event, observers, quality_only=False):
                        mapping_tolerance_s=number(obs,'mapping_tolerance_s',.001),
                        source_minus_curve_s=number(obs,'source_minus_curve_s',0),
                        ser_byte_order=obs.get('ser_byte_order','header'))
+        if suffix=='.avi':
+            reference=obs.get('avi_timestamp_reference','auto')
+            if kind=='tangra_lc':reference='midpoint'
+            if reference not in ('start','midpoint','end'):
+                raise ValueError('AVI: choose the saved curve timestamp convention / 请选择 AVI 曲线时标基准')
+            station['timestamp_reference']=reference
+            first=station['source_first_frame']
+            if not quality_only and (not isinstance(first,int) or first<0):
+                raise ValueError('AVI: supply curve frame ID at source index 0 / 请填写 AVI 第 0 帧对应的曲线帧号')
+            if not quality_only and station['source_minus_curve_s']!=0:
+                raise ValueError('AVI cannot independently verify a source clock offset; use zero')
+            station['timing_policy']='AVI explicit frame identity; UTC from saved curve; no independent source clock'
         if kind=='pymovie_csv' and (source_path.is_dir() or suffix in ('.fits','.fit','.fts')):
             from astropy.io import fits
             source=source_path
@@ -119,5 +141,12 @@ def build_config(event, observers, quality_only=False):
             raise ValueError(f'{station["name"]}: D/R window requires PyOTE results or D/R')
         cfg['stations'].append(station)
     from .plan_station_timeline import order_stations
-    cfg['stations']=[s['config'] for s in order_stations([dict(config=c) for c in cfg['stations']],order)]
+    from .read_occult_prediction import form_settings, load_prediction, enabled
+    path_order=order=='path_north_to_south'
+    settings=form_settings({**event,'shadow_enabled':'1'} if path_order else event,
+                           quality_only and not path_order)
+    geometry=load_prediction(settings,date)[0] if path_order else None
+    if path_order:settings['enabled']=enabled(event.get('shadow_enabled',False))
+    if settings['enabled'] or path_order:cfg['shadow_simulation']=settings
+    cfg['stations']=[s['config'] for s in order_stations([dict(config=c) for c in cfg['stations']],order,geometry)]
     return cfg

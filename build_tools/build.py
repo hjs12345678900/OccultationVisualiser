@@ -26,7 +26,8 @@ subprocess.run([str(exe),'--self-test',str(report)],check=True)
 results=json.loads(report.read_text(encoding='utf-8-sig'))
 if not results['ok']:raise SystemExit('Package self-test failed')
 if results['architecture']!=platform.machine():raise SystemExit('Frozen application architecture differs from build Python')
-results['version']=tomllib.loads((root/'pyproject.toml').read_text(encoding='utf-8-sig'))['project']['version']
+expected_version=tomllib.loads((root/'pyproject.toml').read_text(encoding='utf-8-sig'))['project']['version']
+if results.get('version')!=expected_version:raise SystemExit('Frozen package version differs from pyproject.toml')
 provenance=vendor/'advcore-build.json'
 if platform.system()=='Darwin' and platform.machine()=='arm64':
     results['advcore_build']=json.loads(provenance.read_text(encoding='utf-8-sig'))

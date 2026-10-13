@@ -27,3 +27,21 @@
 - [v1.10.0 p001](v1.10.0/feature-list_v1.10.0_p001.md): FEAT-0028–0029.
 
 - [v1.11.0 p001](v1.11.0/feature-list_v1.11.0_p001.md): FEAT-0030–0031.
+
+- [v1.12.0 p001](v1.12.0/feature-list_v1.12.0_p001.md): FEAT-0032–0033, implemented.
+
+- [v1.12.1 p001](v1.12.1/feature-list_v1.12.1_p001.md): FEAT-0034, implemented.
+
+- [v1.13.0 p001](v1.13.0/feature-list_v1.13.0_p001.md): FEAT-0035, implemented.
+
+- [v1.13.1 p001](v1.13.1/feature-list_v1.13.1_p001.md): FEAT-0036, implemented.
+
+- [v1.14.0 p001](v1.14.0/feature-list_v1.14.0_p001.md): FEAT-0037, implemented.
+
+- [v1.15.0 p001](v1.15.0/feature-list_v1.15.0_p001.md): FEAT-0038.
+
+- [v1.16.0 p001](v1.16.0/feature-list_v1.16.0_p001.md): FEAT-0039–0040.
+
+- [v1.17.0 p001](v1.17.0/feature-list_v1.17.0_p001.md): FEAT-0041.
+
+- [v1.18.0 p001](v1.18.0/feature-list_v1.18.0_p001.md): FEAT-0042.

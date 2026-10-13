@@ -7,11 +7,11 @@ from .gui_path_entry import path_entry
 from .gui_localization import Localizer
 from .inspect_observer_metadata import inspect_exposure,resolve_native_mode
 
-DEFAULTS=dict(name='Observer',mode='PyMovie / PyOTE',curve='',source='',pyote_result='',
+DEFAULTS=dict(name='Station',observer='',color='',mode='PyMovie / PyOTE',curve='',source='',pyote_result='',
               tracking_csv='',exposure_ms='',exposure_mode='auto',target_column='signal-target',source_first_frame='',
               predicted_utc='',native_mode='auto',mapping_tolerance_s='0.001',source_minus_curve_s='0',
               ser_byte_order='header',D_utc='',R_utc='',target_xy='',fits_hdu='',timing_source_file='',adv_python='',
-              latitude_deg='',longitude_deg='',altitude_m='',camera_settings_file='')
+              latitude_deg='',longitude_deg='',altitude_m='',camera_settings_file='',avi_timestamp_reference='auto')
 
 
 class ObserverDialog:
@@ -29,16 +29,20 @@ class ObserverDialog:
         for panel,key in zip(self.panels,('files_tab','location_tab','advanced_tab')):
             self.book.add(panel,text=self.ui.text(key));panel.columnconfigure(1,weight=1)
         self.field(main,0,'name','station_name')
-        self.field(main,1,'mode','curve_kind',[('Tangra','Tangra'),('PyMovie / PyOTE','PyMovie / PyOTE')],literal=True)
-        for row,key,label in [(2,'curve','curve_input'),(3,'source','source_input'),(4,'pyote_result','pyote_input'),(5,'tracking_csv','tracking_input')]:
+        self.field(main,1,'observer','observer_name')
+        from .gui_station_color import color_controls
+        self.widgets['color']=color_controls(main,2,self.values['color'],self.ui)
+        self.field(main,3,'mode','curve_kind',[('Tangra','Tangra'),('PyMovie / PyOTE','PyMovie / PyOTE')],literal=True)
+        for row,key,label in [(4,'curve','curve_input'),(5,'source','source_input'),(6,'pyote_result','pyote_input'),(7,'tracking_csv','tracking_input')]:
             path_entry(main,self.values[key],row,label,ui=self.ui,source=key=='source')
-        self.field(main,6,'target_column','target_column')
-        self.ui.label(main,'auto_exposure').grid(row=7,column=0,sticky='w',pady=6)
-        self.exposure_info=ttk.Label(main,wraplength=540);self.exposure_info.grid(row=7,column=1,columnspan=3,sticky='w')
-        self.ui.label(main,'data_mode').grid(row=8,column=0,sticky='w',pady=6)
-        self.mode_info=ttk.Label(main,wraplength=540);self.mode_info.grid(row=8,column=1,columnspan=3,sticky='w')
-        self.ui.label(main,'file_help',wraplength=875).grid(row=9,column=0,columnspan=4,sticky='w',pady=10)
-        self.ui.label(main,'mode_help',wraplength=875).grid(row=10,column=0,columnspan=4,sticky='w',pady=6)
+        self.field(main,8,'target_column','target_column')
+        self.ui.label(main,'auto_exposure').grid(row=9,column=0,sticky='w',pady=6)
+        self.exposure_info=ttk.Label(main,wraplength=540);self.exposure_info.grid(row=9,column=1,columnspan=3,sticky='w')
+        self.ui.label(main,'data_mode').grid(row=10,column=0,sticky='w',pady=6)
+        self.mode_info=ttk.Label(main,wraplength=540);self.mode_info.grid(row=10,column=1,columnspan=3,sticky='w')
+        self.ui.label(main,'file_help',wraplength=875).grid(row=11,column=0,columnspan=4,sticky='w',pady=10)
+        self.ui.label(main,'mode_help',wraplength=875).grid(row=12,column=0,columnspan=4,sticky='w',pady=6)
+        self.field(main,13,'avi_timestamp_reference','avi_reference',[(v,'avi_'+v) for v in ('auto','start','midpoint','end')])
         for row,key,label in [(0,'latitude_deg','latitude'),(1,'longitude_deg','longitude'),(2,'altitude_m','altitude'),(3,'predicted_utc','prediction')]:self.field(location,row,key,label)
         self.ui.label(location,'location_help',wraplength=875).grid(row=4,column=0,columnspan=4,sticky='w',pady=12)
         choices=[('auto','auto'),('manual','manual_override')]
@@ -118,4 +122,8 @@ class ObserverDialog:
         values={k:v.get().strip() for k,v in self.values.items()}
         if not values['name']:
             messagebox.showerror(self.ui.text('station'),self.ui.text('station_name'),parent=self.window);return
+        from .resolve_station_colors import normalize_color
+        try:values['color']=normalize_color(values['color'])
+        except ValueError as exc:
+            messagebox.showerror(self.ui.text('station_color'),str(exc),parent=self.window);return
         self.on_save(values);self.window.destroy()

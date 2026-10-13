@@ -5,21 +5,31 @@ import numpy as np
 class UtcAxis:
     """Map retained UTC intervals proportionally to pixels, with visible breaks.
 
+    Optional durations in playback seconds compress accelerated transit while
+    preserving a continuous UTC axis. Optional relative speeds identify
+    accelerated intervals with shaded bands and double-slash compression marks;
+    actual omissions retain their existing breaks.
     Input intervals are increasing datetime64[ns] pairs in UTC; positions are
     canvas pixels. Omitted times return None. Curves must reset across segments
     so a line cannot bridge a cut. The axis changes display only, never UTC.
     """
-    def __init__(self, intervals, left=116, right=898):
-        durations = [float((b-a)/np.timedelta64(1, 's')) for a,b in intervals]
+    def __init__(self, intervals, left=116, right=898, durations=None, speeds=None):
+        durations = durations if durations is not None else [float((b-a)/np.timedelta64(1, 's')) for a,b in intervals]
+        if len(durations)!=len(intervals) or not np.isfinite(durations).all() or min(durations)<=0:
+            raise ValueError('Positive finite axis duration required for each interval')
+        self.speeds = speeds if speeds is not None else [1.]*len(intervals)
+        if len(self.speeds)!=len(intervals) or not np.isfinite(self.speeds).all() or min(self.speeds)<1:
+            raise ValueError('One finite relative speed >=1 per UTC interval is required')
+        breaks = [a[1] < b[0] for a,b in zip(intervals,intervals[1:])]
         total = sum(durations)
         gap = min(22., (right-left)/(2*len(intervals)))
-        width = right-left-gap*(len(intervals)-1)
+        width = right-left-gap*sum(breaks)
         self.segments = []
         cursor = left
-        for (start, stop), duration in zip(intervals, durations):
+        for i, ((start, stop), duration) in enumerate(zip(intervals, durations)):
             end = cursor+width*duration/total
             self.segments.append((start,stop,cursor,end))
-            cursor = end+gap
+            cursor = end+(gap if i<len(breaks) and breaks[i] else 0)
 
     def position(self, utc):
         for start, stop, left, right in self.segments:
@@ -37,9 +47,18 @@ class UtcAxis:
             if lo < hi:
                 yield self.position(lo),self.position(hi)
 
-    def draw(self, draw, y, font, format_clock):
-        """Draw UTC ticks/grid and double-slash cut marks within a plot row."""
-        for a,b,left,right in self.segments:
+    def draw(self, draw, y, font, format_clock, gap_label='Gap'):
+        """Draw UTC ticks and distinguish both compressed and omitted time.
+
+        ``gap_label`` is localized display text. Compression annotations use
+        relative gap/event speed, independent of any final playback rescaling.
+        Marking compression changes no pixel-to-UTC mapping or frame selection.
+        """
+        from .render_utc_compression import draw_compression
+        labels=draw_compression(draw,self.segments,self.speeds,y,font,gap_label)
+        ticks=[]
+        for (a,b,left,right),speed in zip(self.segments,self.speeds):
+            if speed>1:continue
             span=float((b-a)/np.timedelta64(1, 's'))
             target=max(2., (right-left)/112)
             tick=next((s for s in (1,2,5,10,30,60,300,600,3600) if s>=span/target),3600)
@@ -48,9 +67,17 @@ class UtcAxis:
             while time<b:
                 px=self.position(time)
                 draw.line((px,y+68,px,y+244),fill=(32,45,67))
-                draw.text((px,y+253),format_clock(time)[:8],font=font,fill=(189,200,217),anchor='mt')
+                ticks.append((px,format_clock(time)[:8]))
                 time+=np.timedelta64(tick,'s')
+        last_right=self.segments[0][2]
+        for px,text in sorted(ticks):
+            bounds=font.getbbox(text);half=(bounds[2]-bounds[0])/2
+            if px-half<last_right+8 or px+half>self.segments[-1][3]:continue
+            if any(px+half+8>left and px-half-8<right for left,right in labels):continue
+            draw.text((px,y+253),text,font=font,fill=(189,200,217),anchor='mt')
+            last_right=px+half
         for previous,following in zip(self.segments,self.segments[1:]):
+            if previous[1] == following[0]:continue
             center=(previous[3]+following[2])/2
             draw.rectangle((previous[3]+2,y+66,following[2]-2,y+246),fill=(9,13,22))
             for offset in (-4,3):

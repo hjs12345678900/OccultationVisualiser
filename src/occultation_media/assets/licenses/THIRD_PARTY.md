@@ -23,8 +23,14 @@ licenses continue to apply independently of this project's own source.
   FFmpeg source: https://ffmpeg.org/download.html
 - Noto Sans CJK: https://github.com/notofonts/noto-cjk (SIL Open Font License).
   Font and full OFL text are included in `src/occultation_media/assets/fonts/`.
+- Natural Earth country polygons (public domain): https://www.naturalearthdata.com/about/terms-of-use/
+  World outlines use 1:110m; Australia/New Zealand use 1:10m. Asset provenance is in `assets/maps/SOURCE.txt`.
 - PyInstaller: https://pyinstaller.org/en/stable/license.html (GPL with the bundling exception).
 
 The build records installed package license files alongside the bundled assets.
 Before public redistribution, retain these notices and the relevant bundled
 licenses. No observational data is included in the application package.
+
+Natural Earth populated-place labels (public domain): cities.json is reduced from
+[10m populated places](https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-populated-places/)
+using source names, latitude/longitude, scalerank and population; all 7,342 places are retained.

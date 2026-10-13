@@ -1,0 +1,64 @@
+"""Optional desktop controls for a synchronized nominal-shadow map in exports."""
+import tkinter as tk
+from tkinter import ttk, filedialog, messagebox
+from .read_occult_prediction import form_settings
+
+
+def simulation_controls(parent, fields, ui):
+    """Add a compact opt-in panel; settings persist with the existing project."""
+    fields['shadow_enabled']=tk.StringVar(value='0')
+    fields['shadow_prediction_file']=tk.StringVar()
+    fields['shadow_xml']=tk.StringVar()
+    fields['shadow_view_mode']=tk.StringVar(value='full_path')
+    panel=ui.bind(ttk.LabelFrame(parent,padding=7),'shadow_title');panel.pack(fill='x',pady=5)
+    row=ttk.Frame(panel);row.pack(fill='x')
+    check=ttk.Checkbutton(row,variable=fields['shadow_enabled'],onvalue='1',offvalue='0')
+    ui.bind(check,'shadow_enable');check.pack(side='left')
+    ui.button(row,'shadow_configure',command=lambda:PredictionDialog(parent,fields,ui)).pack(side='right')
+    view=ttk.Frame(panel);view.pack(fill='x',pady=(5,0))
+    ui.label(view,'shadow_view').pack(side='left',padx=(0,8))
+    ui.combo(view,fields['shadow_view_mode'],[('full_path','shadow_view_full'),('follow_shadow','shadow_view_follow')],width=26).pack(side='left')
+    summary=ttk.Label(panel,wraplength=1020);summary.pack(anchor='w',pady=(4,0))
+    def refresh(*_):
+        file=fields['shadow_prediction_file'].get()
+        suffix=file if file else ui.text('shadow_pasted') if fields['shadow_xml'].get().strip() else ui.text('shadow_no_prediction')
+        summary.configure(text=ui.text('shadow_help')+' · '+suffix)
+    for key in ('shadow_enabled','shadow_prediction_file','shadow_xml'):fields[key].trace_add('write',refresh)
+    ui.callbacks.append(refresh);refresh()
+    return panel
+
+
+class PredictionDialog:
+    """Choose a local prediction file or paste one XML event, with validation."""
+    def __init__(self,parent,fields,ui):
+        self.fields,self.ui=fields,ui
+        self.window=tk.Toplevel(parent);self.window.title(ui.text('shadow_configure'))
+        self.window.transient(parent.winfo_toplevel());self.window.grab_set()
+        self.window.geometry('900x540')
+        body=ttk.Frame(self.window,padding=12);body.pack(fill='both',expand=True)
+        self.file=tk.StringVar(value=fields['shadow_prediction_file'].get())
+        ttk.Label(body,text=ui.text('shadow_file')).pack(anchor='w')
+        row=ttk.Frame(body);row.pack(fill='x',pady=5)
+        ttk.Entry(row,textvariable=self.file).pack(side='left',fill='x',expand=True)
+        ttk.Button(row,text=ui.text('browse'),command=self.choose_file).pack(side='left',padx=6)
+        ttk.Label(body,text=ui.text('shadow_xml_label')).pack(anchor='w',pady=(6,3))
+        self.xml=tk.Text(body,height=14,wrap='word');self.xml.pack(fill='both',expand=True)
+        self.xml.insert('1.0',fields['shadow_xml'].get())
+        ttk.Label(body,text=ui.text('shadow_model_help'),wraplength=870).pack(anchor='w',pady=6)
+        actions=ttk.Frame(body);actions.pack(fill='x')
+        ttk.Button(actions,text=ui.text('cancel'),command=self.window.destroy).pack(side='right')
+        ttk.Button(actions,text=ui.text('shadow_save'),command=self.save).pack(side='right',padx=6)
+
+    def choose_file(self):
+        file=filedialog.askopenfilename(parent=self.window,filetypes=[('Occult prediction','*.occelmnt *.xml'),('All files','*')])
+        if file:
+            self.file.set(file);self.xml.delete('1.0','end')
+
+    def save(self):
+        values={k:v.get() for k,v in self.fields.items()}
+        values.update(shadow_enabled='1',shadow_prediction_file=self.file.get().strip(),shadow_xml=self.xml.get('1.0','end').strip())
+        try:form_settings(values)
+        except Exception as exc:
+            messagebox.showerror(self.ui.text('shadow_title'),str(exc),parent=self.window);return
+        for key in ('shadow_prediction_file','shadow_xml','shadow_enabled'):self.fields[key].set(values[key])
+        self.window.destroy()

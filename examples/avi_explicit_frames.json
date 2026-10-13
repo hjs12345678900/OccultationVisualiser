@@ -1,0 +1,24 @@
+{
+  "event": "AVI example",
+  "target": "Target",
+  "date_utc": "2026-09-12",
+  "alignment": "absolute_utc",
+  "window_mode": "full",
+  "step_s": 0.1,
+  "language": "both",
+  "output_root": "./avi_outputs",
+  "stations": [
+    {
+      "name": "Station",
+      "curve": "path/to/curve.csv",
+      "source": "path/to/recording.avi",
+      "curve_format": "pymovie_csv",
+      "target_column": "signal-target",
+      "source_first_frame": 100,
+      "timestamp_reference": "midpoint",
+      "exposure_s": 0.1,
+      "source_minus_curve_s": 0,
+      "mapping_tolerance_s": 0.001
+    }
+  ]
+}

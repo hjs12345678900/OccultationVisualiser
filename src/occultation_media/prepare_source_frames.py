@@ -6,7 +6,7 @@ from .read_frame_sources import open_source
 
 def add_source_arguments(parser):
     """Add source selection and explicit zero-based frame mapping CLI options."""
-    parser.add_argument('--source',type=Path,help='ADV/SER/RAVF/FITS file or FITS directory; omit for LC cutouts')
+    parser.add_argument('--source',type=Path,help='AVI/ADV/SER/RAVF/FITS file or FITS directory; omit for LC cutouts')
     parser.add_argument('--csv',type=Path,help='Explicit Tangra CSV (required when folder has multiple CSVs)')
     parser.add_argument('--lc',type=Path,help='Explicit LC file for legacy cutout mode')
     parser.add_argument('--source-first-frame',type=int,help='CSV frame number corresponding to source index 0; required with --source')

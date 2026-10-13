@@ -66,6 +66,24 @@ Exposure comes from FITS/ADV/RAVF/LC, PyMovie shutter metadata or CameraSettings
 
 **Curve type** describes already-exported data: `raw` means original target counts; supported `C3/C4` exports were normalized using the corresponding reference star. Auto reads the saved result's mode, otherwise uses raw. Use a matching analysis CSV and result for C3/C4. The app imports these values without extracting photometry, normalizing or refitting.
 
+## Optional synchronized shadow map
+
+Below the job log, enable **Add synchronized map below video/GIF results**, then
+open **Prediction elements**. Choose one `.occelmnt`/XML event or paste its full
+XML. An example Altona prediction is included in `examples/`.
+
+The exported video adds a map below the curves/images. The green footprint is
+the predicted circular shadow at the displayed UTC; colored dots mark stations
+with coordinates. The adjacent station list shows the selected original frame,
+its corrected exposure midpoint, and predicted separation/coverage. Locations
+may remain unknown. The map renders offline from bundled coastlines.
+
+`shadow_frame_positions.csv` gives positions for every verified original frame,
+including corrected curve UTC and separate source UTC. `shadow_simulation.json`
+records the prediction and model. Simulation does not change photometry, D/R,
+clock corrections or playback UTC. Nominal coverage excludes prediction/shape
+uncertainty; it is not an observed occultation classification.
+
 ## Noise diagnostics
 
 **Noise diagnostics** reads saved curves without decoding images. It displays saved and guarded-baseline SNR separately, along with exposure, binning, camera evidence and available background/mask statistics.

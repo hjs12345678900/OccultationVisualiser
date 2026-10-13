@@ -26,13 +26,13 @@ class App(JobControls):
         self.tree.delete(*self.tree.get_children())
         for i,o in enumerate(self.observers):
             coordinates=', '.join(o.get(k,'') for k in ('latitude_deg','longitude_deg')).strip(', ')
-            self.tree.insert('','end',iid=str(i),text=o['name'],values=(o['mode'],Path(o['curve']).name,coordinates or '—',o['predicted_utc'] or '—'))
+            self.tree.insert('','end',iid=str(i),text=o['name'],values=(o.get('observer','') or '—',o['mode'],Path(o['curve']).name,coordinates or '—',o['predicted_utc'] or '—'))
 
     def add_observer(self):
         if len(self.observers)>=8:
             messagebox.showerror(self.tr('stations_title'),'Maximum 8',parent=self.root);return
         def save(values):self.observers.append(values);self.refresh()
-        ObserverDialog(self.root,{**DEFAULTS,'name':f'Observer {len(self.observers)+1}'},save,self.ui_language)
+        ObserverDialog(self.root,{**DEFAULTS,'name':f'Station {len(self.observers)+1}'},save,self.ui_language)
 
     def edit_observer(self):
         selected=self.tree.selection()

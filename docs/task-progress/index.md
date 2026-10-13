@@ -29,3 +29,21 @@
 - [v1.11.0 p001](v1.11.0/task-progress_v1.11.0_p001.md): TASK-0029–0030.
 
 - [v1.11.1 p001](v1.11.1/task-progress_v1.11.1_p001.md): TASK-0031–0032.
+
+- [v1.12.0 p001](v1.12.0/task-progress_v1.12.0_p001.md): TASK-0033–0034, 57 source tests, real-data exports and native arm64 package validation complete.
+
+- [v1.12.1 p001](v1.12.1/task-progress_v1.12.1_p001.md): TASK-0035–0036, 60 tests, real-data parity and native package validation complete.
+
+- [v1.13.0 p001](v1.13.0/task-progress_v1.13.0_p001.md): TASK-0037–0038, 63 tests, real-data UTC parity and native package validation complete.
+
+- [v1.13.1 p001](v1.13.1/task-progress_v1.13.1_p001.md): TASK-0039–0040, 63 tests, Altona timing parity and native validation complete.
+
+- [v1.14.0 p001](v1.14.0/task-progress_v1.14.0_p001.md): TASK-0041–0042, 67 tests, real-data timing parity and native package validation complete.
+
+- [v1.15.0 p001](v1.15.0/task-progress_v1.15.0_p001.md): TASK-0043–0044.
+
+- [v1.16.0 p001](v1.16.0/task-progress_v1.16.0_p001.md): TASK-0045–0046.
+
+- [v1.17.0 p001](v1.17.0/task-progress_v1.17.0_p001.md): TASK-0047.
+
+- [v1.18.0 p001](v1.18.0/task-progress_v1.18.0_p001.md): TASK-0048.

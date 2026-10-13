@@ -1,4 +1,4 @@
-"""Verify native ADV/SER/FITS/RAVF exposure midpoints before displaying pixels."""
+"""Verify timed sources or map AVI by explicit curve-frame identity before display."""
 from pathlib import Path
 import numpy as np
 from .read_frame_sources import open_source
@@ -38,6 +38,10 @@ class StationFrames:
                                   fits_hdu=cfg.get('fits_hdu'), adv_python=cfg.get('adv_python'))
         kind = self.reader.metadata['format']
         self.paths = self.reader.files if kind == 'FITS' else [path]
+        if kind == 'AVI':
+            from .prepare_avi_frames import map_avi_frames
+            map_avi_frames(self, cfg, rows)
+            return
         tolerance = float(cfg['mapping_tolerance_s'])
         offset_s = float(cfg.get('source_minus_curve_s', 0.))
         if not np.isfinite([tolerance, offset_s]).all() or tolerance < 0:

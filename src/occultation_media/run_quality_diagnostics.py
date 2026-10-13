@@ -6,7 +6,7 @@ from .make_station_media import load_config
 from .read_station_curves import read_station_curve
 from .read_saved_transitions import saved_transitions
 from .read_saved_snr import station_snr
-from .plan_station_timeline import order_stations
+from .resolve_station_order import resolve_station_order
 from .diagnose_noise_quality import diagnose_stations
 from .record_media_run import snapshot_code, input_manifest, finish_record, write_json
 
@@ -52,7 +52,8 @@ def run_quality_diagnostics(config_path, output_dir=None):
             if c.get('exposure_evidence',{}).get('path'):paths.append(c['exposure_evidence']['path'])
             d,r,timing=saved_transitions(c,rows)
             stations.append(dict(config=c,rows=rows,D=d,R=r,timing=timing,snr=station_snr(c,rows,d,r)))
-        stations=order_stations(stations,cfg.get('station_order','input'))
+        stations,ordering_paths=resolve_station_order(cfg,stations,out)
+        paths+=ordering_paths
         paths+=save_quality_report(out,stations,float(cfg.get('diagnostic_margin_s',1)))
         inputs=input_manifest(paths);status='complete'
         print(f'Noise diagnostics: {out}',flush=True)

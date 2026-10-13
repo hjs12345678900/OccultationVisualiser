@@ -45,6 +45,10 @@ def inspect_exposure(obs):
             reader=RavfSource(source)
             with source.open('rb') as stream:frame=reader.reader.frame_by_index(stream,0)
             return dict(exposure_s=positive(frame.exposure_duration/1e9),path=str(source),method='RAVF recorded exposure')
+    if curve.is_file() and curve.suffix.lower()=='.lc':
+        from .read_station_curves import read_lc_curve
+        rows,_,_=read_lc_curve(curve)
+        return dict(exposure_s=positive(np.median([r.exposure_s for r in rows])),path=str(curve),method='Tangra LC recorded exposure')
     if curve.is_file() and curve.suffix.lower()=='.csv':
         with curve.open(encoding='utf-8-sig') as stream:
             for line in stream:

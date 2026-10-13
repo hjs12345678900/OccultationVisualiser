@@ -10,7 +10,7 @@ def format_counts(value):
     return f'{value/1e6:.2g}M' if abs(value)>=1e6 else f'{value/1e3:.3g}K' if abs(value)>=1e3 else f'{value:.3g}'
 
 SIZE = (1920,1440)
-COLORS = [(92,170,255),(100,215,171),(249,207,111),(198,149,246)]
+from .resolve_station_colors import station_colors
 
 
 def clock(utc):
@@ -29,11 +29,24 @@ class StationPanels:
     """
     def __init__(self,stations,start,stop,language,context):
         self.stations,self.start,self.stop,self.language = stations,start,stop,language
+        self.colors=station_colors([s['config'] for s in stations])
         self.span = float((stop-start)/np.timedelta64(1,'s'))
-        self.axis = UtcAxis(context.get('intervals', [(start,stop)]))
+        self.timeline_plan = context.get('timeline_plan', {})
+        segment_plan=self.timeline_plan.get('segments')
+        self.axis = UtcAxis(context.get('intervals', [(start,stop)]),
+                            durations=self.timeline_plan.get('axis_durations_s'),
+                            speeds=[s['speed'] for s in segment_plan] if segment_plan else None)
         self.font = load_font(21,language)
         self.small = load_font(17,language)
         self.size = (1920, max(526, (220 + 305*len(stations) + 1)//2*2))
+        self.base_size=self.size
+        self.shadow_panel=None
+        if context.get('shadow_simulation') is not None:
+            from .render_shadow_map import ShadowMapPanel
+            self.base_size=(1920,(108+305*len(stations))//2*2)
+            self.size=self.base_size
+            self.shadow_panel=ShadowMapPanel(context['shadow_simulation'],language)
+            self.size=(self.size[0],self.size[1]+self.shadow_panel.size[1])
         self.template = Image.new('RGB',self.size,(9,13,22))
         draw = ImageDraw.Draw(self.template)
         draw.text((28,22),f"{context['event']} · {context['target']} · {context['date_utc']}",
@@ -44,11 +57,21 @@ class StationPanels:
             y = 105+k*305
             draw.rounded_rectangle((24,y,920,y+295),radius=12,fill=(12,20,34),outline=(40,57,82))
             draw.rounded_rectangle((944,y,1896,y+295),radius=12,fill=(12,20,34),outline=(40,57,82))
-            color = COLORS[k % len(COLORS)]
+            color = self.colors[k]
             draw.text((42,y+10),station['config']['name'],font=load_font(24,language,True),fill=color)
             draw.text((965,y+10),station['config']['name'],font=load_font(24,language,True),fill=color)
             details=' · '.join(v for v in (coordinate_label(station['config']),snr_label(station.get('snr',{}),language)) if v)
-            draw.text((42,y+34),details,font=load_font(15,language),fill=(189,200,217))
+            observer=station['config'].get('observer','').strip()
+            font=load_font(15,language)
+            if observer:
+                credit=('观测者：' if language=='zh' else 'Observer: ')+' '.join(observer.split())
+                details=' · '.join(v for v in (details,credit) if v)
+                # Fit attribution on the existing metadata line, clear of the plot ticks.
+                # Full supplied text is retained in the saved configuration and metadata.
+                if draw.textlength(details,font=font)>856:
+                    while details and draw.textlength(details+'…',font=font)>856:details=details[:-1]
+                    details+='…'
+            draw.text((42,y+34),details,font=font,fill=(189,200,217))
             values = [r.counts for r in station['rows'] if r.valid and self.sx(r.utc) is not None]
             if not values: values = [r.counts for r in station['rows'] if r.valid]
             lo,hi = min(0.,min(values)),max(0.,max(values))
@@ -59,17 +82,7 @@ class StationPanels:
                 draw.line((116,py,898,py),fill=(32,45,67))
                 draw.text((103,py),format_counts(value),font=self.small,fill=(189,200,217),anchor='rm')
             draw.rectangle((116,y+68,898,y+244),outline=(64,79,103),width=2)
-            self.axis.draw(draw,y,self.small,clock)
-        step=context['step_s']
-        plan=context.get('timeline_plan',{})
-        fixed=plan.get('playback_mode')=='fixed_duration'
-        speed=(f'指定视频时长 {plan["requested_video_duration_s"]:g} 秒' if language=='zh' else f'Video duration {plan["requested_video_duration_s"]:g} s') if fixed else ('实时播放' if language=='zh' else 'Real-time playback')
-        cut=(' · // 跳过 UTC 空档' if language=='zh' else ' · // UTC gaps skipped') if len(self.axis.segments)>1 else ''
-        footer = f'统一绝对 UTC · 原始光变采样 · 展示间隔 {step:g} 秒 · {speed}{cut}' if language=='zh' else f'Shared absolute UTC · original curve cadence · {step:g} s display steps · {speed}{cut}'
-        draw.text((28,self.size[1]-84),footer,font=self.font,fill=(188,203,222))
-        definition='SNR = B / σB（掩食外基线的单帧散布）；LC 表示直接使用 LC 基线' if language=='zh' else 'SNR = B / σB (baseline per-exposure scatter); LC uses the saved LC baseline'
-        self.footer = context['coverage_note'][language]+' · '+definition
-
+            self.axis.draw(draw,y,self.small,clock,gap_label='空档' if language=='zh' else 'Gap')
     def sx(self,utc):
         return self.axis.position(utc)
 
@@ -107,8 +120,8 @@ class StationPanels:
                     previous=None;continue
                 point=(x,self.sy(k,row.counts))
                 segment=self.axis.segment_id(row.utc)
-                if previous is not None and previous_segment==segment: draw.line((*previous,*point),fill=COLORS[k % len(COLORS)],width=2)
-                draw.ellipse((point[0]-2,point[1]-2,point[0]+2,point[1]+2),fill=COLORS[k % len(COLORS)])
+                if previous is not None and previous_segment==segment: draw.line((*previous,*point),fill=self.colors[k],width=2)
+                draw.ellipse((point[0]-2,point[1]-2,point[0]+2,point[1]+2),fill=self.colors[k])
                 previous=point;previous_segment=segment
             px = self.sx(utc)
             draw.line((px,y+68,px,y+244),fill=(249,236,181,120),width=2)
@@ -119,10 +132,13 @@ class StationPanels:
                 continue
             row=rows[index]
             record = field.records[index]
-            source_utc = np.datetime64(record['source_midpoint_utc'], 'ns')
+            source_utc = np.datetime64(record['source_midpoint_utc'], 'ns') if record['source_midpoint_utc'] else None
             label = f'{clock(row.utc)} UTC · frame {row.frame}'
             draw.text((1876,y+16),label,font=self.small,fill=(198,208,224),anchor='ra')
-            if source_utc != row.utc:
+            if source_utc is None:
+                note = 'AVI 帧号对应 · UTC 来自曲线' if self.language=='zh' else 'AVI frame mapping · UTC from curve'
+                draw.text((1876,y+42),note,font=self.small,fill=(154,169,192),anchor='ra')
+            elif source_utc != row.utc:
                 draw.text((1876,y+42),f'Source {clock(source_utc)} UTC; curve above',font=self.small,fill=(154,169,192),anchor='ra')
             if field.cfg.get('source','').lower().endswith('.lc'):
                 draw.text((965,y+40),'LC target cutout (35 × 35)',font=self.small,fill=(198,208,224))
@@ -140,6 +156,7 @@ class StationPanels:
                 crop=frame.crop((max(0,cx-18),max(0,cy-18),min(frame.width,cx+19),min(frame.height,cy+19)))
                 image.paste(crop.resize((196,196),Image.Resampling.NEAREST),(1650,y+72))
                 low=d is not None and d<=row.utc<r and utc>=d
-                draw.rectangle((1647,y+69,1849,y+271),outline=(255,73,98) if low else COLORS[k % len(COLORS)],width=3)
-        draw.text((28,self.size[1]-42),self.footer,font=self.small,fill=(168,183,204))
+                draw.rectangle((1647,y+69,1849,y+271),outline=(255,73,98) if low else self.colors[k],width=3)
+        if self.shadow_panel is not None:
+            image.paste(self.shadow_panel.render(utc,indices),(0,self.base_size[1]))
         return image

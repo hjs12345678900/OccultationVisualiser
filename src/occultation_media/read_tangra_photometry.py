@@ -96,15 +96,16 @@ def parse_tangra_csv(path: Path, event_date: str) -> tuple[list[TangraRow], dict
 
         return float(value) if value is not None and value.strip() else float("nan")
 
+    records = [{key.strip(): value for key, value in row.items()} for row in reader]
+    records = [row for row in records if row.get('FrameNo', '').strip()]
+    from .utc_conventions import clock_sequence
+    times = clock_sequence(event_date, [row['Time (UT)'] for row in records])
     rows: list[TangraRow] = []
-    for raw_row in reader:
-        row = {key.strip(): value for key, value in raw_row.items()}
-        if not row.get("FrameNo", "").strip():
-            continue
+    for row, utc in zip(records, times):
         rows.append(
             TangraRow(
                 frame=int(row["FrameNo"]),
-                time_utc=parse_time(event_date, row["Time (UT)"].strip().strip("[]")),
+                time_utc=utc.astype('datetime64[us]').item(),
                 signal_adu={identifier: optional_float(row[f"Signal ({identifier})"]) for identifier in object_ids},
                 background_adu={identifier: optional_float(row[f"Background ({identifier})"]) for identifier in object_ids},
             )

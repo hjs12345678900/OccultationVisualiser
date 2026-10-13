@@ -1,3 +1,64 @@
+# 1.18.0
+
+- Add a saved map-view choice: full shadow path (default) or follow asteroid. Follow mode centers the real shadow position at each displayed UTC, with fixed projection and zoom throughout the clip.
+- Cache projected offline geography and corridor vectors, redraw cities and geographic north for the moving viewport, and preserve shared station colors.
+- Keep physical frame/display positions, UTC, D/R and gap timing independent of the camera. Old projects retain the full-path overview. Validate both modes in bilingual exports and the frozen self-test.
+
+# 1.17.0
+
+- Add an optional station color picker, hex entry, preview and reset to automatic. Preserve explicit choices in projects and exported configuration.
+- Share station colors between curves, image labels/normal target borders, map markers and legends; preserve color identity across station sorting. Record actual display colors and automatic/custom mode in media metadata.
+- Extend automatic colors to eight distinct palette entries while retaining the original first four, and avoid exact collisions with manually chosen colors. Old projects remain automatic.
+
+# 1.16.0
+
+- Add sequential AVI decoding with bundled FFmpeg; require explicit source-frame identity and CSV timestamp convention. Keep source UTC/residual null and label curve-derived timing in images and metadata.
+- Validate raw BGR, FFV1 and MJPEG, cropped/sparse frame mapping, midnight, irregular cadence and bilingual exports, including the frozen application.
+- Correct the ellipsoid horizon test to use the geodetic local normal in coverage and path-order calculations.
+- Fix midnight rollover and whole-second UTC labels in the legacy Tangra CSV entry point.
+- Include matching Python sources in the frozen bundle so exported source snapshots and hashes are complete; verify them in the frozen self-test.
+- Quantify Altona shadow deformation: a fixed 76.2 km fundamental-plane circle becomes a changing ground ellipse; preserve the physically expected projection and fixed map scale.
+- Preserve existing Observer fields, 1794 real source-frame matches, D/R, station order and 50x continuous gaps. Document remaining limb-rendering and AVI identity limits.
+
+# 1.15.0
+
+- Add an optional Observer field separate from the station name in the desktop editor and station list. Preserve it across project save/load and JSON media configuration.
+- Display supplied observer credits above the corresponding light curve in MP4, GIF and PNG outputs; leave blank credits hidden. Keep full text in media metadata, even when a long display label is shortened.
+- Keep path-based station ordering, map identities/colors, recorded UTC and D/R windows independent of attribution. Older projects retain their station names with no inferred observer.
+
+# 1.14.0
+
+- Add path north-to-south station ordering from the signed fundamental-plane impact parameter at each station's own predicted closest approach. Include Earth's rotation and local geographic north orientation.
+- Apply the resulting order consistently to station rows, source-frame selections, quality reports and map colors. Save nominal offsets, predicted approach UTC and solver residuals in station_path_order.json and station metadata.
+- Support prediction-based ordering with the map disabled; reject missing predictions and place uncomputable offsets last with explicit reasons. Keep latitude sorting as a separately labeled option.
+- Upgrade saved GUI north/south ordering with an enabled prediction map to path ordering. Preserve original frame UTC, photometry, measured D/R, ±5 s windows and accelerated-gap presentation.
+
+# 1.13.1
+
+- Mark accelerated UTC gaps on every station axis with a shaded band, double slashes at scale boundaries and a localized speed label. Keep shadow motion continuous and the original D/R windows unchanged.
+- Keep ordinary UTC tick labels clear of the compression caption. Narrow bands use a second-line multiplier.
+- Map rendering remains completely offline using packaged Natural Earth coastlines and city coordinates.
+
+# 1.13.0
+
+- Remove the two explanatory station-footer lines and close up the space above the map.
+- Add offline major-city labels and a geographic north arrow computed through the path-aligned projection.
+- Add continuous accelerated gaps (default 50x), with 25-fps transit motion in MP4/GIF and a compressed, continuous UTC plot axis. Preserve original frame timestamps and measured D/R.
+- Default new projects to D/R windows with five seconds before D and after R. Keep existing projects' saved skip/keep choices.
+
+# 1.12.1
+
+- Replace the bottom map/sidebar with a full-width path-focused map. Apply one oblique geographic projection to coastlines, stations and shadow so motion runs left to right with equal map scale.
+- Show the moving nominal circular silhouette over its shadow corridor, plus station-colored dots and a compact legend matching the light-curve rows. Remove repeated frame/coordinate/status labels from the map.
+- Keep original frame-time CSVs, measured D/R, UTC cuts and playback behavior unchanged. Verify projected geography, dateline handling and visible silhouette movement.
+
+# 1.12.0
+
+- Add an optional synchronized shadow map beneath station curves/images in MP4, GIF and PNG outputs. Import one Occult prediction file or paste its XML through the desktop interface.
+- Compute the nominal circular shadow on a rotating oblate Earth using supplied prediction elements. Use existing station coordinates; unknown locations remain explicitly unavailable.
+- Keep global display UTC and each selected image’s corrected exposure midpoint distinct. Export positions for every verified original frame with source UTC, saved clock offset and predicted station separation/coverage.
+- Bundle offline Natural Earth coastlines. Preserve project opt-in settings; legacy projects load with simulation disabled. Validate event dates and reject extrapolation beyond one hour around the prediction epoch.
+
 # 1.11.1
 
 - Fix Windows ANSI decoding failures when loading UTF-8 PyOTE results with non-ASCII notes. Read saved mode, D/R and SNR with an explicit UTF-8 BOM-aware encoding.

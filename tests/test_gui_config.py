@@ -63,10 +63,13 @@ class GuiConfigTests(unittest.TestCase):
             event=dict(event='Test',target='Star',date_utc='2026-09-12',start_utc='10:00:00.1',end_utc='10:00:00.5',
                        step_s='.2',language='en',output_root=tmp)
             for count in (2,3):
-                cfg=build_config(event,[{**obs,'name':str(k)} for k in range(count)])
+                cfg=build_config(event,[{**obs,'name':str(k),'observer':' 示例观测者 / Example Observer ' if k==0 else ''} for k in range(count)])
                 path=root/f'config{count}.json';path.write_text(json.dumps(cfg))
                 output=make_station_media(path,root/f'out{count}')
                 meta=json.loads((output/'media_metadata.json').read_text())
                 self.assertEqual(len(meta['stations']),count)
+                self.assertEqual(meta['stations'][0]['observer'],'示例观测者 / Example Observer')
+                self.assertEqual(meta['stations'][0]['name'],'0')
+                self.assertNotIn('observer',meta['stations'][1])
                 self.assertEqual(meta['outputs']['en']['mp4_shape'][1]%2,0)
                 self.assertTrue(Path(meta['outputs']['en']['mp4']).is_file())

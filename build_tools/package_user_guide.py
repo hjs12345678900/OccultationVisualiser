@@ -19,10 +19,12 @@ def copy_user_guide(root, destination):
             guide.write_text(guide.read_text(encoding='utf-8').replace('src/occultation_media/assets/branding/','branding/'),encoding='utf-8')
     for folder in ('examples', 'docs'):
         (destination / folder).mkdir(exist_ok=True)
-    for path in (root / 'examples').glob('*.json'):
+    for path in (root / 'examples').iterdir():
+        if path.suffix not in ('.json','.occelmnt'):continue
         shutil.copy2(path, destination / 'examples' / path.name)
     shutil.copy2(root / 'docs/native_station_media.md',
                  destination / 'docs/native_station_media.md')
+    shutil.copy2(root / 'docs/review_v1.16.0.md', destination / 'docs/review_v1.16.0.md')
     (destination/'branding').mkdir(exist_ok=True)
     for name in ('cover.png','icon.png','prompts.json','generation_record.json'):
         shutil.copy2(root/'src/occultation_media/assets/branding'/name,destination/'branding'/name)

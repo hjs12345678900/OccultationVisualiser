@@ -28,6 +28,8 @@ def encode_station_language(panels,timeline,selections,output,contacts,durations
     boundaries[-1]=max(1,boundaries[-1])
     repeats=np.diff(np.r_[0,boundaries])
     gif_fps=min(50.,1/float(np.median(durations)))
+    if getattr(panels,'timeline_plan',{}).get('gap_mode')=='accelerate':
+        gif_fps=max(gif_fps,25.)
     executable = ffmpeg_executable()
     cmd=[executable,'-hide_banner','-loglevel','error','-n','-f','rawvideo','-pixel_format','rgb24',
          '-video_size',f'{size[0]}x{size[1]}','-framerate','25','-i','pipe:0',

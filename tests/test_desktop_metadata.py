@@ -61,6 +61,11 @@ class DesktopMetadataTests(unittest.TestCase):
         self.assertEqual(event['window_mode'],'dr');self.assertEqual(event['skip_gaps'],'skip')
         self.assertEqual(obs[0]['exposure_mode'],'manual');self.assertEqual(obs[0]['exposure_ms'],'300.0711')
         self.assertEqual(obs[0]['source_first_frame'],'7')
+        self.assertEqual(obs[0]['observer'],'')
+        obs[0]['observer']='示例观测者 / Example Observer'
+        _,reopened=migrate_project(dict(gui_version=1,event=event,observers=obs),DEFAULTS)
+        self.assertEqual(reopened[0]['observer'],obs[0]['observer'])
+        self.assertEqual(reopened[0]['name'],'Old')
 
     def test_live_caption_translation_preserves_model_values(self):
         interpreter=tk.Tcl();language=tk.StringVar(master=interpreter,value='中文')

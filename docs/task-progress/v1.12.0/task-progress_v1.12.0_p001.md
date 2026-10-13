@@ -1,0 +1,4 @@
+# v1.12.0
+
+- TASK-0033: Add separate prediction I/O, Bessel geometry, simulation pipeline, offline map renderer and desktop controls. Reuse verified image midpoint UTC; physical position is independent of playback duration/cuts. Preserve legacy projects with simulation disabled. Implemented.
+- TASK-0034: Source validation: 57 tests pass, including six new geometry/input/frame-offset/export/legacy tests. Known Altona center agrees with the previous independent calculation; inverse and circular-rim projection residuals are below 1e-8 km. Real Altona four-station bilingual export succeeds with 72 display instants, preserving station D/R and UTC gaps; 1,794 original image mappings receive positions. Native arm64 frozen self-tests pass, including bilingual offline-map encoding, exact frame UTC and ADV checks. Final GUI starts as 1.12.0; workspace scrolls to the optional controls. Versioned local macOS archive packaged. Complete.

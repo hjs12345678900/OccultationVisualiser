@@ -86,6 +86,8 @@ def run():
         with contextlib.redirect_stdout(io.StringIO()):make_station_media(config,root/'native_media')
         record=json.loads((root/'native_media/run_metadata.json').read_text(encoding='utf-8-sig'))
         if not record['input_integrity_verified']:raise AssertionError('Native input integrity failed')
+        if not {'read_avi_frames.py','compute_shadow_geometry.py','make_station_media.py'}.issubset(record['source_sha256']):
+            raise AssertionError('Frozen export lacks reproducible Python source hashes')
         meta=json.loads((root/'native_media/media_metadata.json').read_text(encoding='utf-8-sig'))
         if not (root/'native_media/quality_report.json').is_file():raise AssertionError('Missing automatic quality report')
         from .station_cli import main as station_cli
@@ -97,9 +99,14 @@ def run():
         for lang in ('en','zh'):
             with Image.open(meta['outputs'][lang]['gif']) as image:
                 if image.n_frames!=6:raise AssertionError('Native GIF elapsed timeline differs')
+        from .self_test_avi import verify as verify_avi
+        with contextlib.redirect_stdout(io.StringIO()):avi_job=verify_avi(root)
         from .self_test_unicode import verify as verify_unicode
         unicode_job=verify_unicode(root)
+        from .self_test_shadow import verify as verify_shadow
+        with contextlib.redirect_stdout(io.StringIO()):shadow_job=verify_shadow(root)
     return {'ok':True,'system':platform.system(),'architecture':platform.machine(),
-            'exports':['SER','FITS','RAVF','native PyMovie SER'],'languages':['en','zh'],'outputs':['GIF','PNG','MP4'],
-            'branding_resources':True,'noise_diagnostics':True,'automatic_metadata_and_utc':True,
-            'ffmpeg':ffmpeg_executable(),'adv':adv,'unicode_inputs':unicode_job}
+            'version':__import__('occultation_media.record_media_run',fromlist=['version']).version(),
+            'avi':avi_job,'exports':['AVI','SER','FITS','RAVF','native PyMovie SER'],'languages':['en','zh'],'outputs':['GIF','PNG','MP4'],
+            'branding_resources':True,'noise_diagnostics':True,'automatic_metadata_and_utc':True,'source_snapshot_hashes':True,
+            'ffmpeg':ffmpeg_executable(),'adv':adv,'unicode_inputs':unicode_job,'shadow_simulation':shadow_job}

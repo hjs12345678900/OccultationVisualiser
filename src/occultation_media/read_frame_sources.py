@@ -126,6 +126,9 @@ class FitsSource:
 def open_source(path, *, ser_byte_order='header', fits_hdu=None, adv_python=None):
     """Dispatch a path to a raw reader; raise on unsupported formats."""
     path = Path(path)
+    if path.suffix.lower() == '.avi':
+        from .read_avi_frames import AviSource
+        return AviSource(path)
     if path.is_dir() or path.suffix.lower() in ('.fits', '.fit', '.fts'):
         return FitsSource(path, fits_hdu)
     if path.suffix.lower() == '.ser':

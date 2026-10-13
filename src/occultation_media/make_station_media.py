@@ -9,7 +9,7 @@ from .prepare_lc_frames import LCFrames
 from .read_saved_transitions import saved_transitions
 from .read_saved_snr import station_snr
 from .record_media_run import write_json, input_manifest, finish_record, sha256, snapshot_code
-from .plan_station_timeline import order_stations, plan_timeline
+from .plan_station_timeline import plan_timeline
 from .render_station_panels import StationPanels
 from .encode_station_media import encode_station_language
 
@@ -29,6 +29,19 @@ def load_config(path):
             if values.get(key):
                 file = Path(values[key]).expanduser()
                 values[key] = str((path.parent/file).resolve() if not file.is_absolute() else file.resolve())
+    for station in cfg['stations']:
+        from .resolve_station_colors import normalize_color
+        color=normalize_color(station.get('color'))
+        if color:station['color']=color
+        else:station.pop('color',None)
+        observer=station.get('observer','')
+        if not isinstance(observer,str):raise ValueError('Station observer must be text / 观测者须为文字')
+        if observer.strip():station['observer']=observer.strip()
+        else:station.pop('observer',None)
+    settings=cfg.get('shadow_simulation',{})
+    if isinstance(settings,dict) and settings.get('prediction_file'):
+        file=Path(settings['prediction_file']).expanduser()
+        settings['prediction_file']=str((path.parent/file).resolve() if not file.is_absolute() else file.resolve())
     if cfg['language'] not in ('en','zh','both'): raise ValueError('Unsupported output language')
     return cfg
 
@@ -65,16 +78,18 @@ def make_station_media(config_path, output_dir=None, verify_only=False):
             paths += curve_paths+frames.paths
             paths += [c[k] for k in ('pyote_result','tracking_csv','timing_source_file','coordinate_source_file','source_manifest','snr_source_file') if c.get(k)]
             if c.get('exposure_evidence',{}).get('path'):paths.append(c['exposure_evidence']['path'])
-            residuals = [record['residual_s'] for record in frames.records.values()]
+            residuals = [record['residual_s'] for record in frames.records.values() if record['residual_s'] is not None]
             coverage.append(dict(name=c['name'], samples=len(rows), matched_images=len(frames.mapping),
                 curve_start_utc=str(rows[0].utc), curve_end_utc=str(rows[-1].utc),
                 image_start_utc=frames.records[min(frames.mapping)]['source_midpoint_utc'] if frames.mapping else None,
                 image_end_utc=frames.records[max(frames.mapping)]['source_midpoint_utc'] if frames.mapping else None,
                 residual_min_s=min(residuals) if residuals else None,
                 residual_max_s=max(residuals) if residuals else None))
-            print(f'{c["name"]}: {len(rows)} samples; {len(frames.mapping)} verified real images', flush=True)
+            print(f'{c["name"]}: {len(rows)} samples; {len(frames.mapping)} mapped real images', flush=True)
         for station,cov in zip(stations,coverage): station['coverage']=cov
-        stations = order_stations(stations, cfg.get('station_order', 'input'))
+        from .resolve_station_order import resolve_station_order
+        stations,ordering_paths = resolve_station_order(cfg, stations, out)
+        paths += ordering_paths
         coverage = [s['coverage'] for s in stations]
         cfg['stations'] = [s['config'] for s in stations]
         from .run_quality_diagnostics import save_quality_report
@@ -82,12 +97,17 @@ def make_station_media(config_path, output_dir=None, verify_only=False):
         timeline, holds, intervals, plan = plan_timeline(cfg, stations)
         start, stop = intervals[0][0], intervals[-1][1]
         write_json(out/'resolved_config.json', cfg)
+        from .plan_shadow_simulation import prepare_simulation
+        simulation, prediction_paths=prepare_simulation(cfg,stations,timeline,out)
+        paths += prediction_paths
         inputs = input_manifest(paths)
         selections = [[nearest_sample(s['rows'], t) for s in stations] for t in timeline]
         partial = [c for c in coverage if c['matched_images']<c['samples']]
         warnings = [f'{c["name"]}: {c["matched_images"]}/{c["samples"]} source images; missing times stay blank' for c in partial]
+        warnings += [f'{s["config"]["name"]}: AVI frame identity declared by user; UTC comes from curve, no independent source UTC verification'
+                     for s in stations if Path(s['config']['source']).suffix.lower()=='.avi']
         context = dict(event=cfg['event'].replace('_',' '), target=cfg['target'], date_utc=cfg['date_utc'], step_s=step,
-            intervals=intervals, timeline_plan=plan,
+            intervals=intervals, timeline_plan=plan, shadow_simulation=simulation,
             coverage_note=dict(en=' · '.join(warnings) if warnings else 'All source timestamps verified',
                               zh=' · '.join(f'{c["name"]}：{c["matched_images"]}/{c["samples"]} 帧；缺失时无画面' for c in partial) if partial else '所有原始帧时间戳均已核对'))
         outputs = {}
@@ -103,16 +123,23 @@ def make_station_media(config_path, output_dir=None, verify_only=False):
             for lang in ('en','zh') if cfg['language']=='both' else (cfg['language'],):
                 panels = StationPanels(stations, start, stop, lang, context)
                 outputs[lang] = encode_station_language(panels,timeline,selections,out/f'{cfg["event"]}_stations_{lang}.mp4',contacts,holds)
+        from .resolve_station_colors import station_colors, color_hex
+        colors=station_colors([s['config'] for s in stations])
         metadata = []
-        for s, cov in zip(stations, coverage):
+        for s, cov, color in zip(stations, coverage, colors):
             f = s['frames']
-            metadata.append(dict(**cov, curve_info=s['curve_info'], timing=s['timing'],
+            metadata.append(dict(**cov, display_color=color_hex(color),
+                color_mode='custom' if s['config'].get('color') else 'automatic', curve_info=s['curve_info'], timing=s['timing'],
+                source_info=getattr(getattr(f,'reader',None),'metadata',{'format':'Tangra LC cutout'}),
                 baseline_snr=s['snr'], separately_reported_snr=s['config'].get('reported_snr'),
                 coordinates={k:s['config'][k] for k in ('latitude_deg','longitude_deg','altitude_m','coordinate_source','coordinate_source_file') if k in s['config']},
+                **({'observer':s['config']['observer']} if s['config'].get('observer') else {}),
+                path_offset=s.get('path_offset'),
                 D_utc=str(s['D']) if s['D'] is not None else None, R_utc=str(s['R']) if s['R'] is not None else None,
                 stretch=f.limits, frame_alignment=[f.records[i] for i in sorted(f.records)]))
         write_json(out/'media_metadata.json', dict(alignment='absolute_utc', no_event_time_shift=True,
             timeline_plan=plan, station_order=cfg.get('station_order','input'),
+            shadow_simulation=simulation.evidence if simulation else {'enabled':False},
             verified_only=verify_only, utc_timeline=[str(t) for t in timeline], step_s=step, warnings=warnings,
             stations=metadata, outputs=outputs, display_selection=[dict(utc=str(t), frames=[s['rows'][i].frame if i is not None and i in s['frames'].mapping else None for s,i in zip(stations,indices)]) for t,indices in zip(timeline,selections)]))
         status = 'complete_with_warnings' if warnings else 'complete'

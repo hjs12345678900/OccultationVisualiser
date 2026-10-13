@@ -14,7 +14,21 @@ def build_workspace(app):
     root,ui=app.root,app.i18n
     root.title('OccultationVisualiser '+version());root.geometry('1100x950');root.minsize(920,850)
     set_window_icon(root)
-    body=ttk.Frame(root,padding=14);body.pack(fill='both',expand=True)
+    shell=ttk.Frame(root);shell.pack(fill='both',expand=True)
+    canvas=tk.Canvas(shell,highlightthickness=0)
+    scrollbar=ttk.Scrollbar(shell,orient='vertical',command=canvas.yview)
+    canvas.configure(yscrollcommand=scrollbar.set)
+    scrollbar.pack(side='right',fill='y');canvas.pack(side='left',fill='both',expand=True)
+    body=ttk.Frame(canvas,padding=14)
+    window=canvas.create_window((0,0),window=body,anchor='nw')
+    body.bind('<Configure>',lambda _:canvas.configure(scrollregion=canvas.bbox('all')))
+    canvas.bind('<Configure>',lambda e:canvas.itemconfigure(window,width=e.width))
+    def scroll_workspace(event):
+        if event.widget.winfo_class() not in ('Text','Treeview','TCombobox'):
+            units=int(-event.delta/120) if abs(event.delta)>=120 else int(-event.delta)
+            canvas.yview_scroll(units,'units')
+    root.bind('<MouseWheel>',scroll_workspace,add='+')
+    app.workspace_canvas=canvas
     header=ttk.Frame(body);header.pack(fill='x')
     app.header_icon=brand_photo(root,'icon.png',(46,46))
     ttk.Label(header,image=app.header_icon).pack(side='left',padx=(0,8))
@@ -38,8 +52,8 @@ def build_workspace(app):
     output=ttk.Frame(body);output.pack(fill='x',pady=6);output.columnconfigure(1,weight=1)
     app.fields['output_root']=tk.StringVar();path_entry(output,app.fields['output_root'],0,'output',True,ui)
     stations=ui.bind(ttk.LabelFrame(body,padding=8),'stations_title');stations.pack(fill='both',expand=True)
-    app.tree=ttk.Treeview(stations,columns=('mode','curve','coordinates','expected'),show='tree headings',height=4,selectmode='browse')
-    headings=[('#0','station',130),('mode','curve_kind',130),('curve','curve_file',250),('coordinates','coordinates',220),('expected','predicted_col',160)]
+    app.tree=ttk.Treeview(stations,columns=('observer','mode','curve','coordinates','expected'),show='tree headings',height=4,selectmode='browse')
+    headings=[('#0','station',130),('observer','observer_col',150),('mode','curve_kind',110),('curve','curve_file',200),('coordinates','coordinates',200),('expected','predicted_col',140)]
     def translated_tree():
         for key,label,width in headings:app.tree.heading(key,text=ui.text(label));app.tree.column(key,width=width)
     ui.callbacks.append(translated_tree);translated_tree()
@@ -59,4 +73,6 @@ def build_workspace(app):
     ui.callbacks.append(lambda:app.status.set(app.tr(app.status_key)))
     app.progress=ttk.Progressbar(body,mode='indeterminate');app.progress.pack(fill='x',pady=4)
     app.log=tk.Text(body,height=4,wrap='word',state='disabled');app.log.pack(fill='x')
+    from .gui_shadow_simulation import simulation_controls
+    app.simulation_panel=simulation_controls(body,app.fields,ui)
     root.protocol('WM_DELETE_WINDOW',app.close)
